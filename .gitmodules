@@ -1,0 +1,9 @@
+[submodule "external/nanogui"]
+  path = external/nanogui
+  url = https://github.com/wjakob/nanogui
+[submodule "external/libigl"]
+  path = external/libigl
+  url = https://github.com/libigl/libigl
+[submodule "external/cgal"]
+  path = external/cgal
+  url = https://github.com/CGAL/cgal
