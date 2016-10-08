@@ -19,16 +19,27 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "
   endif()
 endif()
 
-
-add_executable(cad-app
-  src/main.cpp
-)
+# Build NanoGUI
+set(NANOGUI_BUILD_EXAMPLE OFF CACHE BOOL " " FORCE)
+set(NANOGUI_BUILD_SHARED  OFF CACHE BOOL " " FORCE)
+set(NANOGUI_BUILD_PYTHON  OFF CACHE BOOL " " FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui ext_build/nanogui)
+set_property(TARGET nanogui glfw glfw_objects bin2c PROPERTY FOLDER "dependencies")
 
 # Header file directories of dependency libraries
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui/include
   ${NANOGUI_EXTRA_INCS}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl/include
-  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/external/eigen
 )
+
+add_executable(cad-app
+  src/main.cpp
+)
+
+add_definitions(${NANOGUI_EXTRA_DEFS})
+target_link_libraries(cad-app nanogui ${NANOGUI_EXTRA_LIBS})
+
+
 
