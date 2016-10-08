@@ -37,6 +37,7 @@ include_directories(
 add_executable(cad-app
   src/main.cpp
   src/viewer.h src/viewer.cpp
+  src/mesh.h src/mesh.cpp
 )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})

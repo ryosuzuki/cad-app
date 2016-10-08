@@ -4,6 +4,8 @@
 
 void Viewer::init() {
 
+  using namespace nanogui;
+
   glfwInit();
   glfwSetTime(0);
 
@@ -42,10 +44,24 @@ void Viewer::init() {
   screen->setVisible(true);
   screen->performLayout();
 
+  Eigen::MatrixXd vertices;
+  Eigen::MatrixXi faces;
+  Eigen::MatrixXd vertexUvs;
+  Eigen::MatrixXi faceUvs;
+  Eigen::MatrixXd cornerNormals;
+  Eigen::MatrixXi faceNormalIndices;
+
+  igl::readOBJ("../bunny.obj", vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
+
+  this->mesh.set(vertices, faces);
+  // this->mesh.setUv(vertexUvs, faceUvs);
+
 }
 
 void Viewer::load() {
   std::cout << "load" << std::endl;
+
+
 }
 
 void Viewer::save() {
