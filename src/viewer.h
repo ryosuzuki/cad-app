@@ -39,6 +39,8 @@ class Viewer : public Screen {
 public:
   Viewer();
   virtual ~Viewer();
+  virtual void draw(NVGcontext *ctx);
+  virtual void drawContents();
 
 protected:
   nanogui::GLShader shader_;

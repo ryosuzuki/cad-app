@@ -4,7 +4,7 @@
 
 Viewer::Viewer() : Screen(Eigen::Vector2i(1024, 768), "CAD App") {
   Window *window = new Window(this, "Viewer");
-  window->setPosition(Eigen::Vector2i(10, 10));
+  window->setPosition(Eigen::Vector2i(15, 15));
   window->setLayout(new GroupLayout());
 
   Eigen::MatrixXf indices(3, 2);
@@ -46,3 +46,24 @@ Viewer::Viewer() : Screen(Eigen::Vector2i(1024, 768), "CAD App") {
 Viewer::~Viewer() {
   shader_.free();
 }
+
+void Viewer::draw(NVGcontext *ctx) {
+  Screen::draw(ctx);
+}
+
+void Viewer::drawContents() {
+  shader_.bind();
+
+  Eigen::Matrix4f mvp;
+  mvp.setIdentity();
+  mvp.topLeftCorner<3,3>() = Eigen::Matrix3f(Eigen::AngleAxisf((float) glfwGetTime(), Eigen::Vector3f::UnitZ())) * 0.25f;
+  mvp.row(0) *= (float) mSize.y() / (float) mSize.x();
+
+  shader_.setUniform("modelViewProj", mvp);
+
+  /* Draw 2 triangles starting at index 0 */
+  shader_.drawIndexed(GL_TRIANGLES, 0, 2);
+
+
+}
+
