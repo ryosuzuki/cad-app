@@ -2,6 +2,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <nanogui/nanogui.h>
+#include <iostream>
 
 using nanogui::Alignment;
 using nanogui::Arcball;
@@ -30,6 +31,7 @@ using nanogui::Window;
 using nanogui::frustum;
 using nanogui::lookAt;
 using nanogui::project;
+using nanogui::ref;
 using nanogui::scale;
 using nanogui::translate;
 using nanogui::unproject;
@@ -39,6 +41,9 @@ class Viewer {
 public:
   void init();
   void launch();
+
+  void load();
+  void save();
 
 protected:
   nanogui::GLShader shader_;

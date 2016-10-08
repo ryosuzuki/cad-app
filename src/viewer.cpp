@@ -4,38 +4,54 @@
 
 void Viewer::init() {
 
-  Screen *screen = new Screen(Eigen::Vector2i(1024, 768), "CAD app");
-  screen->drawAll();
+  glfwInit();
+  glfwSetTime(0);
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  glfwWindowHint(GLFW_SAMPLES, 0);
+  glfwWindowHint(GLFW_RED_BITS, 8);
+  glfwWindowHint(GLFW_GREEN_BITS, 8);
+  glfwWindowHint(GLFW_BLUE_BITS, 8);
+  glfwWindowHint(GLFW_ALPHA_BITS, 8);
+  glfwWindowHint(GLFW_STENCIL_BITS, 8);
+  glfwWindowHint(GLFW_DEPTH_BITS, 24);
+  glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+
+  GLFWwindow *window = glfwCreateWindow(800, 800, "CAD app", nullptr, nullptr);
+  glfwMakeContextCurrent(window);
+
+  int width, height;
+  glfwGetFramebufferSize(window, &width, &height);
+  glViewport(0, 0, width, height);
+  glfwSwapInterval(0);
+  glfwSwapBuffers(window);
+
+  Screen *screen = new Screen();
+  screen->initialize(window, true);
+
+  FormHelper *gui = new FormHelper(screen);
+  nanogui::ref<Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Form helper example");
+  gui->addGroup("Workspace");
+  gui->addButton("Load", [&]() { this->load(); });
+  gui->addButton("Save", [&]() { this->save(); });
+
   screen->setVisible(true);
+  screen->performLayout();
 
-  Window *window = new Window(screen, "Menu");
-  window->setPosition(Eigen::Vector2i(15, 15));
-  window->setLayout(new GroupLayout());
-  window->setId("viewer");
+}
 
+void Viewer::load() {
+  std::cout << "load" << std::endl;
+}
+
+void Viewer::save() {
+  std::cout << "save" << std::endl;
 }
 
 void Viewer::launch() {
-  init();
+  this->init();
 }
-
-
-/*
-  Window *window = new Window(this, "Menu");
-  window->setPosition(Eigen::Vector2i(15, 15));
-  window->setLayout(new GroupLayout());
-  window->setId("viewer");
-
-  PopupButton *openButton = new PopupButton(window, "Open Mesh");
-  openButton->setBackgroundColor(Color(0, 255, 0, 25));
-  // openButton->setIcon(ENTYPO_ICON_FOLDER);
-  Popup *popup = openButton->popup();
-  VScrollPanel *vscroll = new VScrollPanel(popup);
-  ImagePanel *panel = new ImagePanel(vscroll);
-  // panel->setImages(mExampleImages);
-  panel->setCallback([&, openButton](int i) {
-    openButton->setPushed(false);
-    // loadInput(mExampleImages[i].second);
-  });
-
- */
