@@ -35,12 +35,10 @@ using nanogui::translate;
 using nanogui::unproject;
 using nanogui::utf8;
 
-class Viewer : public Screen {
+class Viewer {
 public:
-  Viewer();
-  virtual ~Viewer();
-  virtual void draw(NVGcontext *ctx);
-  virtual void drawContents();
+  void init();
+  void launch();
 
 protected:
   nanogui::GLShader shader_;

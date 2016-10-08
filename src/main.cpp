@@ -10,13 +10,11 @@ int main() {
   nanogui::init();
   {
 
-    nanogui::ref<Viewer> viewer = new Viewer();
-    viewer->drawAll();
-    viewer->setVisible(true);
+    Viewer viewer;
+    viewer.launch();
 
     nanogui::mainloop();
   }
-
   nanogui::shutdown();
   return 0;
 }
