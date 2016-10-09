@@ -55,14 +55,17 @@ void Viewer::launch() {
   load();
   // setCallbacks();
 
+  opengl.init();
+  opengl.setMesh(mesh);
+  opengl.bindMesh();
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
     glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    opengl.setMesh(mesh);
-    opengl.init();
+    opengl.drawMesh();
 
     screen->drawContents();
     screen->drawWidgets();

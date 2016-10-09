@@ -38,25 +38,14 @@ public:
 
   Eigen::Matrix<unsigned, Eigen::Dynamic, Eigen::Dynamic> faces;
 
-  // Initialize shaders and buffers
   void init();
-
-  // Release all resources
-  void free();
-
-  // Create a new set of OpenGL buffer objects
   void initBuffers();
 
-  // Update contents from a 'Data' instance
   void setMesh(const Mesh &mesh);
-
-  // Bind the underlying OpenGL buffer objects for subsequent mesh draw calls
   void bindMesh();
+  void drawMesh(bool solid = true);
 
-  /// Draw the currently buffered mesh (either solid or wireframe)
-  void drawMesh(bool solid);
-
-  // Release the OpenGL buffer objects
+  void free();
   void freeBuffers();
 };
 

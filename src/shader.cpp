@@ -64,8 +64,7 @@ GLint Shader::bindVertexAttribArray(const std::string &name, GLuint bufferID, co
   GLint id = attrib(name);
   if (id < 0)
     return id;
-  if (M.size() == 0)
-  {
+  if (M.size() == 0) {
     glDisableVertexAttribArray(id);
     return id;
   }

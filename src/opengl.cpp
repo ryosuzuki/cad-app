@@ -10,10 +10,12 @@ void OpenGL::initBuffers() {
   glGenBuffers(1, &vboVertexNormals);
   glGenBuffers(1, &vboVertexUvs);
   glGenBuffers(1, &vboFaces);
+  /*
   glGenBuffers(1, &vboVertexAmbientMaterials);
   glGenBuffers(1, &vboVertexDiffuseMaterials);
   glGenBuffers(1, &vboVertexSpecularMaterials);
   glGenTextures(1, &vboTextures);
+  */
 }
 
 void OpenGL::freeBuffers() {
@@ -22,10 +24,12 @@ void OpenGL::freeBuffers() {
   glDeleteBuffers(1, &vboVertexNormals);
   glDeleteBuffers(1, &vboVertexUvs);
   glDeleteBuffers(1, &vboFaces);
+  /*
   glDeleteBuffers(1, &vboVertexAmbientMaterials);
   glDeleteBuffers(1, &vboVertexDiffuseMaterials);
   glDeleteBuffers(1, &vboVertexSpecularMaterials);
   glDeleteTextures(1, &vboTextures);
+  */
 }
 
 
@@ -47,12 +51,15 @@ void OpenGL::bindMesh() {
   shaderMesh.bind();
   shaderMesh.bindVertexAttribArray("position", vboVertices, vertices, true);
   shaderMesh.bindVertexAttribArray("normal", vboVertexNormals, vertexNormals, true);
+  /*
   shaderMesh.bindVertexAttribArray("Ka", vboVertexAmbientMaterials, vertexAmbientMaterials, true);
   shaderMesh.bindVertexAttribArray("Kd", vboVertexDiffuseMaterials, vertexDiffuseMaterials, true);
   shaderMesh.bindVertexAttribArray("Ks", vboVertexSpecularMaterials, vertexSpecularMaterials, true);
   shaderMesh.bindVertexAttribArray("texcoord", vboVertexUvs, vertexUvs, true);
-
+  */
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboFaces);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned)*faces.size(), faces.data(), GL_DYNAMIC_DRAW);
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, vboTextures);
   // glUniform1i(shaderMesh.uniform("tex"), 0);
@@ -66,6 +73,7 @@ void OpenGL::drawMesh(bool solid) {
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
   }
+
   glDrawElements(GL_TRIANGLES, 3*faces.cols(), GL_UNSIGNED_INT, 0);
 
   glDisable(GL_POLYGON_OFFSET_FILL);
