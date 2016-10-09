@@ -23,7 +23,7 @@ void Viewer::init() {
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-  GLFWwindow *window = glfwCreateWindow(800, 800, "CAD app", nullptr, nullptr);
+  window = glfwCreateWindow(800, 800, "CAD app", nullptr, nullptr);
   glfwMakeContextCurrent(window);
 
   int width, height;
@@ -32,7 +32,10 @@ void Viewer::init() {
   glfwSwapInterval(0);
   glfwSwapBuffers(window);
 
-  Screen *screen = new Screen();
+  int windowWidth, windowHeight;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+  screen = new Screen();
   screen->initialize(window, true);
 
   FormHelper *gui = new FormHelper(screen);
@@ -44,6 +47,80 @@ void Viewer::init() {
   screen->setVisible(true);
   screen->performLayout();
 
+}
+
+
+
+void Viewer::launch() {
+  init();
+  // setCallbacks();
+
+  while (!glfwWindowShouldClose(window)) {
+    glfwPollEvents();
+
+    glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    screen->drawContents();
+    screen->drawWidgets();
+
+    glfwSwapBuffers(window);
+  }
+
+  glfwTerminate();
+}
+
+void Viewer::setCallbacks() {
+  /*
+  glfwSetCursorPosCallback(window,
+    [](GLFWwindow *, double x, double y) {
+      screen->cursorPosCallbackEvent(x, y);
+    }
+  );
+
+  glfwSetMouseButtonCallback(window,
+    [](GLFWwindow *, int button, int action, int modifiers) {
+      screen->mouseButtonCallbackEvent(button, action, modifiers);
+    }
+  );
+
+  glfwSetKeyCallback(window,
+    [](GLFWwindow *, int key, int scancode, int action, int mods) {
+      screen->keyCallbackEvent(key, scancode, action, mods);
+    }
+  );
+
+  glfwSetCharCallback(window,
+    [](GLFWwindow *, unsigned int codepoint) {
+      screen->charCallbackEvent(codepoint);
+    }
+  );
+
+  glfwSetDropCallback(window,
+    [](GLFWwindow *, int count, const char **filenames) {
+      screen->dropCallbackEvent(count, filenames);
+    }
+  );
+
+  glfwSetScrollCallback(window,
+    [](GLFWwindow *, double x, double y) {
+      screen->scrollCallbackEvent(x, y);
+    }
+  );
+
+  glfwSetFramebufferSizeCallback(window,
+    [](GLFWwindow *, int width, int height) {
+      screen->resizeCallbackEvent(width, height);
+    }
+  );
+  */
+}
+
+
+void Viewer::load() {
+  std::cout << "load" << std::endl;
+
+
   Eigen::MatrixXd vertices;
   Eigen::MatrixXi faces;
   Eigen::MatrixXd vertexUvs;
@@ -53,14 +130,10 @@ void Viewer::init() {
 
   igl::readOBJ("../bunny.obj", vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
 
-  this->mesh.set(vertices, faces);
+  mesh.set(vertices, faces);
   // this->mesh.setUv(vertexUvs, faceUvs);
 
-}
-
-void Viewer::load() {
-  std::cout << "load" << std::endl;
-
+  // core.align_camera_center(data.V,data.F);
 
 }
 
@@ -68,6 +141,17 @@ void Viewer::save() {
   std::cout << "save" << std::endl;
 }
 
-void Viewer::launch() {
-  this->init();
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

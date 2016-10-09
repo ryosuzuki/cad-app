@@ -13,12 +13,14 @@ public:
   void init();
   void launch();
 
+  void setCallbacks();
   void load();
   void save();
 
+  GLFWwindow *window;
+  nanogui::Screen *screen;
   Mesh mesh;
+  // OpenGLState opengl;
 
-protected:
-  nanogui::GLShader shader_;
 };
 

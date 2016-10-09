@@ -29,7 +29,7 @@ set_property(TARGET nanogui glfw glfw_objects bin2c PROPERTY FOLDER "dependencie
 # Header file directories of dependency libraries
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui/include
-  ${NANOGUI_EXTRA_INCS}
+  ${NANOGUI_EXTRA_INCS} # Eigen, GLFW, NanoVG, GLAD
   ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl/include
   ${CMAKE_CURRENT_BINARY_DIR}/external/eigen
 )
@@ -38,6 +38,8 @@ add_executable(cad-app
   src/main.cpp
   src/viewer.h src/viewer.cpp
   src/mesh.h src/mesh.cpp
+  src/opengl.h src/opengl.cpp
+  src/shader.h src/shader.cpp
 )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
