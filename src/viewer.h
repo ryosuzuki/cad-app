@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <iostream>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -6,7 +8,7 @@
 #include <igl/readOBJ.h>
 
 #include "mesh.h"
-
+#include "opengl.h"
 
 class Viewer {
 public:
@@ -20,7 +22,7 @@ public:
   GLFWwindow *window;
   nanogui::Screen *screen;
   Mesh mesh;
-  // OpenGLState opengl;
+  OpenGL opengl;
 
 };
 

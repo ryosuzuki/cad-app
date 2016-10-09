@@ -1,5 +1,4 @@
 
-
 #include "viewer.h"
 
 void Viewer::init() {
@@ -53,6 +52,7 @@ void Viewer::init() {
 
 void Viewer::launch() {
   init();
+  load();
   // setCallbacks();
 
   while (!glfwWindowShouldClose(window)) {
@@ -60,6 +60,9 @@ void Viewer::launch() {
 
     glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    opengl.setMesh(mesh);
+    opengl.init();
 
     screen->drawContents();
     screen->drawWidgets();
