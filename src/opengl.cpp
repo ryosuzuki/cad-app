@@ -68,7 +68,6 @@ void OpenGL::bindMesh() {
 void OpenGL::drawMesh(bool solid) {
   glPolygonMode(GL_FRONT_AND_BACK, solid ? GL_FILL : GL_LINE);
 
-  /* Avoid Z-buffer fighting between filled triangles & wireframe lines */
   if (solid) {
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
@@ -78,6 +77,7 @@ void OpenGL::drawMesh(bool solid) {
 
   glDisable(GL_POLYGON_OFFSET_FILL);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 }
 
 

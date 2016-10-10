@@ -48,29 +48,64 @@ void Viewer::init() {
 
 }
 
-
-
 void Viewer::launch() {
   init();
   load();
   // setCallbacks();
 
   opengl.init();
-  opengl.setMesh(mesh);
-  opengl.bindMesh();
+  GLint texture_factori = opengl.shaderMesh.uniform("texture_factor");
 
   while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
 
     glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    float ratio;
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    ratio = width / (float) height;
+    glViewport(0, 0, width, height);
+
+    opengl.setMesh(mesh);
+    opengl.bindMesh();
+
+    Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f viewMatrix  = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f projMatrix  = Eigen::Matrix4f::Identity();
+
+    GLint model = opengl.shaderMesh.uniform("model");
+    GLint view = opengl.shaderMesh.uniform("view");
+    GLint proj = opengl.shaderMesh.uniform("proj");
+
+    glUniformMatrix4fv(model, 1, GL_FALSE, modelMatrix.data());
+    glUniformMatrix4fv(view, 1, GL_FALSE, viewMatrix.data());
+    glUniformMatrix4fv(proj, 1, GL_FALSE, projMatrix.data());
+
+    GLint specularExponent = opengl.shaderMesh.uniform("specular_exponent");
+    GLint lightPositionWorld = opengl.shaderMesh.uniform("light_position_world");
+    GLint lightingFactor = opengl.shaderMesh.uniform("lighting_factor");
+    GLint fixedColor = opengl.shaderMesh.uniform("fixed_color");
+    GLint textureFactor = opengl.shaderMesh.uniform("texture_factor");
+
+
+
+    glUniform1f(texture_factori, 1.0f);
     opengl.drawMesh();
+
+
+    // mvp_location = glGetUniformLocation(program, "MVP");
+    // glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
+
+
+    glUniform1f(texture_factori, 0.0f);
+
 
     screen->drawContents();
     screen->drawWidgets();
 
     glfwSwapBuffers(window);
+    glfwPollEvents();
   }
 
   glfwTerminate();
@@ -124,8 +159,6 @@ void Viewer::setCallbacks() {
 
 
 void Viewer::load() {
-  std::cout << "load" << std::endl;
-
 
   Eigen::MatrixXd vertices;
   Eigen::MatrixXi faces;

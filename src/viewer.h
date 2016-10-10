@@ -7,6 +7,11 @@
 #include <nanogui/nanogui.h>
 #include <igl/readOBJ.h>
 
+#include <OpenGL/gl3.h>
+// #include <GLFW/glfw3.h>
+
+
+
 #include "mesh.h"
 #include "opengl.h"
 
