@@ -54,7 +54,6 @@ void Viewer::launch() {
   // setCallbacks();
 
   opengl.init();
-  GLint texture_factori = opengl.shaderMesh.uniform("texture_factor");
 
   while (!glfwWindowShouldClose(window)) {
 
