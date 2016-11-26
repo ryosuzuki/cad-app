@@ -42,8 +42,8 @@ void Viewer::init() {
   FormHelper *gui = new FormHelper(screen);
   nanogui::ref<Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Form helper example");
   gui->addGroup("Workspace");
-  gui->addButton("Load", []() { std::cout << "Button pressed." << std::endl; });
-    /*this->load(); });*/
+
+  gui->addButton("Load", [&]() { this->load(); });
   // gui->addButton("Save", [&]() { this->save(); });
 
   screen->setVisible(true);
@@ -52,9 +52,17 @@ void Viewer::init() {
 
 }
 void Viewer::load() {
-  igl::readOBJ("../bunny.obj", vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
-  mesh.set(vertices, faces);
+  std::string filename = nanogui::file_dialog({
+    {"obj", "Wavefront OBJ"}
+  }, false);
+  std::cout << filename << std::endl;
 
+  if (filename.empty()) {
+    return;
+  }
+
+  igl::readOBJ(filename, vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
+  mesh.set(vertices, faces);
   // this->mesh.setUv(vertexUvs, faceUvs);
 
   // core.align_camera_center(data.V,data.F);
@@ -118,10 +126,6 @@ void Viewer::launch() {
 
   glfwTerminate();
 }
-
-
-
-
 
 
 void Viewer::setCallbacks() {
