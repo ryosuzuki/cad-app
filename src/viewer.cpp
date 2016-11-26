@@ -1,6 +1,8 @@
 
 #include "viewer.h"
 
+nanogui::Screen *screen = nullptr;
+
 void Viewer::init() {
 
   using namespace nanogui;
@@ -40,24 +42,40 @@ void Viewer::init() {
   FormHelper *gui = new FormHelper(screen);
   nanogui::ref<Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Form helper example");
   gui->addGroup("Workspace");
-  gui->addButton("Load", [&]() { this->load(); });
-  gui->addButton("Save", [&]() { this->save(); });
+  gui->addButton("Load", []() { std::cout << "Button pressed." << std::endl; });
+    /*this->load(); });*/
+  // gui->addButton("Save", [&]() { this->save(); });
 
   screen->setVisible(true);
   screen->performLayout();
 
+
 }
+void Viewer::load() {
+  igl::readOBJ("../bunny.obj", vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
+  mesh.set(vertices, faces);
+
+  // this->mesh.setUv(vertexUvs, faceUvs);
+
+  // core.align_camera_center(data.V,data.F);
+
+}
+
+void Viewer::save() {
+  std::cout << "save" << std::endl;
+}
+
 
 void Viewer::launch() {
   init();
-  load();
-  // setCallbacks();
+  setCallbacks();
 
   opengl.init();
 
   while (!glfwWindowShouldClose(window)) {
 
-    glClearColor(0.2f, 0.25f, 0.3f, 1.0f);
+    glfwPollEvents();
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     float ratio;
@@ -87,31 +105,26 @@ void Viewer::launch() {
     GLint fixedColor = opengl.shaderMesh.uniform("fixed_color");
     GLint textureFactor = opengl.shaderMesh.uniform("texture_factor");
 
-
-
-    glUniform1f(texture_factori, 1.0f);
+    glUniform1f(textureFactor, 1.0f);
     opengl.drawMesh();
-
-
-    // mvp_location = glGetUniformLocation(program, "MVP");
-    // glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
-
-
-    glUniform1f(texture_factori, 0.0f);
+    glUniform1f(textureFactor, 0.0f);
 
 
     screen->drawContents();
     screen->drawWidgets();
 
     glfwSwapBuffers(window);
-    glfwPollEvents();
   }
 
   glfwTerminate();
 }
 
+
+
+
+
+
 void Viewer::setCallbacks() {
-  /*
   glfwSetCursorPosCallback(window,
     [](GLFWwindow *, double x, double y) {
       screen->cursorPosCallbackEvent(x, y);
@@ -153,35 +166,8 @@ void Viewer::setCallbacks() {
       screen->resizeCallbackEvent(width, height);
     }
   );
-  */
-}
-
-
-void Viewer::load() {
-
-  Eigen::MatrixXd vertices;
-  Eigen::MatrixXi faces;
-  Eigen::MatrixXd vertexUvs;
-  Eigen::MatrixXi faceUvs;
-  Eigen::MatrixXd cornerNormals;
-  Eigen::MatrixXi faceNormalIndices;
-
-  igl::readOBJ("../bunny.obj", vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
-
-  mesh.set(vertices, faces);
-  // this->mesh.setUv(vertexUvs, faceUvs);
-
-  // core.align_camera_center(data.V,data.F);
 
 }
-
-void Viewer::save() {
-  std::cout << "save" << std::endl;
-}
-
-
-
-
 
 
 

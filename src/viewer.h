@@ -25,9 +25,16 @@ public:
   void save();
 
   GLFWwindow *window;
-  nanogui::Screen *screen;
+  // nanogui::Screen *screen;
   Mesh mesh;
   OpenGL opengl;
+
+  Eigen::MatrixXd vertices;
+  Eigen::MatrixXi faces;
+  Eigen::MatrixXd vertexUvs;
+  Eigen::MatrixXi faceUvs;
+  Eigen::MatrixXd cornerNormals;
+  Eigen::MatrixXi faceNormalIndices;
 
 };
 
