@@ -6,18 +6,14 @@
 #include <Eigen/Geometry>
 #include <nanogui/nanogui.h>
 #include <igl/readOBJ.h>
+#include <igl/two_axis_valuator_fixed_up.h>
+#include <igl/quat_to_mat.h>
 
 #include <OpenGL/gl3.h>
 // #include <GLFW/glfw3.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-using namespace glm;
-
-
 #include "mesh.h"
 #include "opengl.h"
-#include "controls.h"
 
 class Viewer {
 public:

@@ -13,12 +13,27 @@ float cameraFar = 100.0;
 float lineWidth = 0.5f;
 float cameraZoom = 3.0f;
 float modelZoom = 3.0f;
-// float mat[16];
+Eigen::Quaternionf trackballAngle = Eigen::Quaternionf::Identity();
+Eigen::Matrix4f viewMatrix = Eigen::Matrix4f::Identity();
+Eigen::Matrix4f projMatrix = Eigen::Matrix4f::Identity();
+Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
+
 Eigen::Vector4f lineColor(0.0f, 0.0f, 0.0f, 1.0f);
 Eigen::Vector3f cameraEye(0, 0, 5);
 Eigen::Vector3f cameraCenter(0, 0, 0);
 Eigen::Vector3f cameraUp(0, 1, 0);
 Eigen::Vector3f modelTranslation(0, 0, 0);
+
+Eigen::Vector4f viewport(0, 0, 800, 800);
+
+
+float currentMouseX;
+float currentMouseY;
+float mouseDownX;
+float mouseDownY;
+float mouseDownZ;
+Eigen::Quaternionf mouseDownRotation;
+
 
 
 void Viewer::init() {
@@ -70,7 +85,7 @@ void Viewer::init() {
 void Viewer::load() {
   std::string filename = nanogui::file_dialog({
     {"obj", "Wavefront OBJ"}
-  }, false);
+    }, false);
   std::cout << filename << std::endl;
 
   if (filename.empty()) {
@@ -116,9 +131,11 @@ void Viewer::launch() {
 
     // Set transformaition parameters
 
+    modelMatrix = Eigen::Matrix4f::Identity();
+    viewMatrix = Eigen::Matrix4f::Identity();
+    projMatrix = Eigen::Matrix4f::Identity();
 
     // Set view parameters
-    Eigen::Matrix4f viewMatrix  = Eigen::Matrix4f::Identity();
     Vector3f f = (cameraCenter - cameraEye).normalized();
     Vector3f s = f.cross(cameraUp).normalized();
     Vector3f u = s.cross(f);
@@ -136,7 +153,6 @@ void Viewer::launch() {
     viewMatrix(2,3) = f.transpose() * cameraEye;
 
     // Set projection paramters
-    Eigen::Matrix4f projMatrix  = Eigen::Matrix4f::Identity();
     if (orthographic) {
       float length = (cameraEye - cameraCenter).norm();
       float h = tan(cameraViewAngle/360.0 * M_PI) * (length);
@@ -169,12 +185,40 @@ void Viewer::launch() {
     }
 
     // Set model parameters
-
-    // libigl::quat_to_mat(trackball_angle.coeffs().data(), mat);
-    // for (unsigned i=0;i<4;++i)
-    //   for (unsigned j=0;j<4;++j)
-    //     model(i,j) = mat[i+4*j];
-    Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
+    float mat[16];
+    /*
+    float quat[4];
+    quat = trackballAngle.coeffs().data();
+    float yy2 = 2.0f * quat[1] * quat[1];
+    float xy2 = 2.0f * quat[0] * quat[1];
+    float xz2 = 2.0f * quat[0] * quat[2];
+    float yz2 = 2.0f * quat[1] * quat[2];
+    float zz2 = 2.0f * quat[2] * quat[2];
+    float wz2 = 2.0f * quat[3] * quat[2];
+    float wy2 = 2.0f * quat[3] * quat[1];
+    float wx2 = 2.0f * quat[3] * quat[0];
+    float xx2 = 2.0f * quat[0] * quat[0];
+    mat[0*4+0] = - yy2 - zz2 + 1.0f;
+    mat[0*4+1] = xy2 + wz2;
+    mat[0*4+2] = xz2 - wy2;
+    mat[0*4+3] = 0;
+    mat[1*4+0] = xy2 - wz2;
+    mat[1*4+1] = - xx2 - zz2 + 1.0f;
+    mat[1*4+2] = yz2 + wx2;
+    mat[1*4+3] = 0;
+    mat[2*4+0] = xz2 + wy2;
+    mat[2*4+1] = yz2 - wx2;
+    mat[2*4+2] = - xx2 - yy2 + 1.0f;
+    mat[2*4+3] = 0;
+    mat[3*4+0] = mat[3*4+1] = mat[3*4+2] = 0;
+    mat[3*4+3] = 1;
+    */
+    igl::quat_to_mat(trackballAngle.coeffs().data(), mat);
+    for (unsigned i=0;i<4;++i) {
+      for (unsigned j=0;j<4;++j) {
+        modelMatrix(i, j) = mat[i+4*j];
+      }
+    }
     modelMatrix.topLeftCorner(3,3) *= cameraZoom;
     modelMatrix.topLeftCorner(3,3) *= modelZoom;
     modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3,3)*modelTranslation;
@@ -212,56 +256,96 @@ void Viewer::launch() {
         lineColor[2], 1.0f);
       opengl.drawMesh(false);
       glUniform4f(fixedColor, 0.0f, 0.0f, 0.0f, 0.0f);
-    } else {
-      glUniform1f(textureFactor, 1.0f);
-      opengl.drawMesh();
-      glUniform1f(textureFactor, 0.0f);
+      } else {
+        glUniform1f(textureFactor, 1.0f);
+        opengl.drawMesh();
+        glUniform1f(textureFactor, 0.0f);
+      }
+
+      screen->drawContents();
+      screen->drawWidgets();
+
+      glfwSwapBuffers(window);
     }
 
-    screen->drawContents();
-    screen->drawWidgets();
-
-    glfwSwapBuffers(window);
+    glfwTerminate();
   }
 
-  glfwTerminate();
-}
+
+  void Viewer::setCallbacks() {
 
 
-void Viewer::setCallbacks() {
-  glfwSetCursorPosCallback(window,
-    [](GLFWwindow *, double x, double y) {
-      screen->cursorPosCallbackEvent(x, y);
-    }
-  );
-
-  glfwSetMouseButtonCallback(window,
-    [](GLFWwindow *, int button, int action, int modifiers) {
-      screen->mouseButtonCallbackEvent(button, action, modifiers);
-    }
-  );
-
-  glfwSetKeyCallback(window,
-    [](GLFWwindow *, int key, int scancode, int action, int mods) {
+    glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
       screen->keyCallbackEvent(key, scancode, action, mods);
-    }
-  );
+    });
 
-  glfwSetCharCallback(window,
-    [](GLFWwindow *, unsigned int codepoint) {
+    glfwSetCharCallback(window, [](GLFWwindow *, unsigned int codepoint) {
       screen->charCallbackEvent(codepoint);
-    }
-  );
+    });
 
-  glfwSetDropCallback(window,
-    [](GLFWwindow *, int count, const char **filenames) {
+    glfwSetDropCallback(window, [](GLFWwindow *, int count, const char **filenames) {
       screen->dropCallbackEvent(count, filenames);
-    }
-  );
+    });
 
-  glfwSetScrollCallback(window,
-    [](GLFWwindow *, double x, double y) {
-      // screen->scrollCallbackEvent(x, y);
+    glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
+      screen->mouseButtonCallbackEvent(button, action, modifiers);
+
+      Eigen::Vector3f coord;
+      Eigen::Vector4f tmp;
+      Eigen::Vector3f center(0, 0, 0);
+      tmp << center,1;
+      tmp = viewMatrix * modelMatrix * tmp;
+      tmp = projMatrix * tmp;
+      tmp = tmp.array() / tmp(3);
+      tmp = tmp.array() * 0.5f + 0.5f;
+      tmp(0) = tmp(0) * viewport(2) + viewport(0);
+      tmp(1) = tmp(1) * viewport(3) + viewport(1);
+      coord = tmp.head(3);
+
+      mouseDownX = currentMouseX;
+      mouseDownY = currentMouseY;
+      mouseDownZ = coord[2];
+      mouseDownRotation = trackballAngle;
+
+    // mouseMode = "ROTATION";
+
+    });
+
+    glfwSetCursorPosCallback(window, [](GLFWwindow *, double x, double y) {
+      screen->cursorPosCallbackEvent(x, y);
+
+      float mouseX = x;
+      float mouseY = y;
+
+      currentMouseX = x;
+      currentMouseY = y;
+
+      std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
+      std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
+
+      float width = viewport(2);
+      float height = viewport(3);
+      double speed = 2.0;
+
+      if (mouseDownX == 0 || mouseDownY == 0) {
+        return;
+      }
+      igl::two_axis_valuator_fixed_up(
+        width,
+        height,
+        speed,
+        mouseDownRotation,
+        mouseDownX,
+        mouseDownY,
+        mouseX,
+        mouseY,
+        trackballAngle
+      );
+
+    });
+
+    glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {
+      screen->scrollCallbackEvent(x, y);
 
       float deltaY = y;
       std::cout << deltaY << std::endl;
@@ -271,16 +355,13 @@ void Viewer::setCallbacks() {
         cameraZoom = (cameraZoom * mult > minZoom ? cameraZoom * mult : minZoom);
       }
 
-    }
-  );
+    });
 
-  glfwSetFramebufferSizeCallback(window,
-    [](GLFWwindow *, int width, int height) {
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow *, int width, int height) {
       screen->resizeCallbackEvent(width, height);
-    }
-  );
+    });
 
-}
+  }
 
 
 
