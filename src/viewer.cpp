@@ -5,6 +5,7 @@ using namespace nanogui;
 
 nanogui::Screen *screen = nullptr;
 
+bool mouseDown = false;
 bool orthographic = false;
 bool wireframe = false;
 float cameraViewAngle = 45.0;
@@ -82,6 +83,7 @@ void Viewer::init() {
 
 
 }
+
 void Viewer::load() {
   std::string filename = nanogui::file_dialog({
     {"obj", "Wavefront OBJ"}
@@ -97,7 +99,6 @@ void Viewer::load() {
   // this->mesh.setUv(vertexUvs, faceUvs);
 
   // core.align_camera_center(data.V,data.F);
-
 }
 
 void Viewer::save() {
@@ -290,23 +291,27 @@ void Viewer::launch() {
     glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
       screen->mouseButtonCallbackEvent(button, action, modifiers);
 
-      Eigen::Vector3f coord;
-      Eigen::Vector4f tmp;
-      Eigen::Vector3f center(0, 0, 0);
-      tmp << center,1;
-      tmp = viewMatrix * modelMatrix * tmp;
-      tmp = projMatrix * tmp;
-      tmp = tmp.array() / tmp(3);
-      tmp = tmp.array() * 0.5f + 0.5f;
-      tmp(0) = tmp(0) * viewport(2) + viewport(0);
-      tmp(1) = tmp(1) * viewport(3) + viewport(1);
-      coord = tmp.head(3);
+      if (action == GLFW_PRESS) {
+        mouseDown = true;
+        Eigen::Vector3f coord;
+        Eigen::Vector4f tmp;
+        Eigen::Vector3f center(0, 0, 0);
+        tmp << center,1;
+        tmp = viewMatrix * modelMatrix * tmp;
+        tmp = projMatrix * tmp;
+        tmp = tmp.array() / tmp(3);
+        tmp = tmp.array() * 0.5f + 0.5f;
+        tmp(0) = tmp(0) * viewport(2) + viewport(0);
+        tmp(1) = tmp(1) * viewport(3) + viewport(1);
+        coord = tmp.head(3);
 
-      mouseDownX = currentMouseX;
-      mouseDownY = currentMouseY;
-      mouseDownZ = coord[2];
-      mouseDownRotation = trackballAngle;
-
+        mouseDownX = currentMouseX;
+        mouseDownY = currentMouseY;
+        mouseDownZ = coord[2];
+        mouseDownRotation = trackballAngle;
+      } else {
+        mouseDown = false;
+      }
     // mouseMode = "ROTATION";
 
     });
@@ -320,27 +325,24 @@ void Viewer::launch() {
       currentMouseX = x;
       currentMouseY = y;
 
-      std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
-      std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
-
       float width = viewport(2);
       float height = viewport(3);
       double speed = 2.0;
 
-      if (mouseDownX == 0 || mouseDownY == 0) {
-        return;
+      if (mouseDown) {
+        std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
+        igl::two_axis_valuator_fixed_up(
+          width,
+          height,
+          speed,
+          mouseDownRotation,
+          mouseDownX,
+          mouseDownY,
+          mouseX,
+          mouseY,
+          trackballAngle
+        );
       }
-      igl::two_axis_valuator_fixed_up(
-        width,
-        height,
-        speed,
-        mouseDownRotation,
-        mouseDownX,
-        mouseDownY,
-        mouseX,
-        mouseY,
-        trackballAngle
-      );
 
     });
 
