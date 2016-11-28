@@ -7,6 +7,3 @@
 [submodule "external/libigl"]
   path = external/libigl
   url = https://github.com/libigl/libigl
-[submodule "external/cgal"]
-  path = external/cgal
-  url = https://github.com/CGAL/cgal
