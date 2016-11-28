@@ -72,11 +72,12 @@ void Viewer::init() {
   screen->initialize(window, true);
 
   FormHelper *gui = new FormHelper(screen);
-  nanogui::ref<Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Form helper example");
+  nanogui::ref<Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Main Menu");
   gui->addGroup("Workspace");
-
   gui->addButton("Load", [&]() { this->load(); });
   // gui->addButton("Save", [&]() { this->save(); });
+  gui->addVariable("Wireframe", wireframe);
+
 
   screen->setVisible(true);
   screen->performLayout();
@@ -257,113 +258,111 @@ void Viewer::launch() {
         lineColor[2], 1.0f);
       opengl.drawMesh(false);
       glUniform4f(fixedColor, 0.0f, 0.0f, 0.0f, 0.0f);
-      } else {
-        glUniform1f(textureFactor, 1.0f);
-        opengl.drawMesh();
-        glUniform1f(textureFactor, 0.0f);
-      }
-
-      screen->drawContents();
-      screen->drawWidgets();
-
-      glfwSwapBuffers(window);
+    } else {
+      glUniform1f(textureFactor, 1.0f);
+      opengl.drawMesh();
+      glUniform1f(textureFactor, 0.0f);
     }
 
-    glfwTerminate();
+    screen->drawContents();
+    screen->drawWidgets();
+
+    glfwSwapBuffers(window);
   }
 
+  glfwTerminate();
+}
 
-  void Viewer::setCallbacks() {
 
+void Viewer::setCallbacks() {
+  glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
+    screen->keyCallbackEvent(key, scancode, action, mods);
+  });
 
-    glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
-      screen->keyCallbackEvent(key, scancode, action, mods);
-    });
+  glfwSetCharCallback(window, [](GLFWwindow *, unsigned int codepoint) {
+    screen->charCallbackEvent(codepoint);
+  });
 
-    glfwSetCharCallback(window, [](GLFWwindow *, unsigned int codepoint) {
-      screen->charCallbackEvent(codepoint);
-    });
+  glfwSetDropCallback(window, [](GLFWwindow *, int count, const char **filenames) {
+    screen->dropCallbackEvent(count, filenames);
+  });
 
-    glfwSetDropCallback(window, [](GLFWwindow *, int count, const char **filenames) {
-      screen->dropCallbackEvent(count, filenames);
-    });
+  glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
+    screen->mouseButtonCallbackEvent(button, action, modifiers);
 
-    glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
-      screen->mouseButtonCallbackEvent(button, action, modifiers);
+    if (action == GLFW_PRESS) {
+      mouseDown = true;
+      Eigen::Vector3f coord;
+      Eigen::Vector4f tmp;
+      Eigen::Vector3f center(0, 0, 0);
+      tmp << center,1;
+      tmp = viewMatrix * modelMatrix * tmp;
+      tmp = projMatrix * tmp;
+      tmp = tmp.array() / tmp(3);
+      tmp = tmp.array() * 0.5f + 0.5f;
+      tmp(0) = tmp(0) * viewport(2) + viewport(0);
+      tmp(1) = tmp(1) * viewport(3) + viewport(1);
+      coord = tmp.head(3);
 
-      if (action == GLFW_PRESS) {
-        mouseDown = true;
-        Eigen::Vector3f coord;
-        Eigen::Vector4f tmp;
-        Eigen::Vector3f center(0, 0, 0);
-        tmp << center,1;
-        tmp = viewMatrix * modelMatrix * tmp;
-        tmp = projMatrix * tmp;
-        tmp = tmp.array() / tmp(3);
-        tmp = tmp.array() * 0.5f + 0.5f;
-        tmp(0) = tmp(0) * viewport(2) + viewport(0);
-        tmp(1) = tmp(1) * viewport(3) + viewport(1);
-        coord = tmp.head(3);
+      mouseDownX = currentMouseX;
+      mouseDownY = currentMouseY;
+      mouseDownZ = coord[2];
+      mouseDownRotation = trackballAngle;
+    } else {
+      mouseDown = false;
+    }
+  // mouseMode = "ROTATION";
 
-        mouseDownX = currentMouseX;
-        mouseDownY = currentMouseY;
-        mouseDownZ = coord[2];
-        mouseDownRotation = trackballAngle;
-      } else {
-        mouseDown = false;
-      }
-    // mouseMode = "ROTATION";
+  });
 
-    });
+  glfwSetCursorPosCallback(window, [](GLFWwindow *, double x, double y) {
+    screen->cursorPosCallbackEvent(x, y);
 
-    glfwSetCursorPosCallback(window, [](GLFWwindow *, double x, double y) {
-      screen->cursorPosCallbackEvent(x, y);
+    float mouseX = x;
+    float mouseY = y;
 
-      float mouseX = x;
-      float mouseY = y;
+    currentMouseX = x;
+    currentMouseY = y;
 
-      currentMouseX = x;
-      currentMouseY = y;
+    float width = viewport(2);
+    float height = viewport(3);
+    double speed = 2.0;
 
-      float width = viewport(2);
-      float height = viewport(3);
-      double speed = 2.0;
+    if (mouseDown) {
+      std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
+      igl::two_axis_valuator_fixed_up(
+        width,
+        height,
+        speed,
+        mouseDownRotation,
+        mouseDownX,
+        mouseDownY,
+        mouseX,
+        mouseY,
+        trackballAngle
+      );
+    }
 
-      if (mouseDown) {
-        std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
-        igl::two_axis_valuator_fixed_up(
-          width,
-          height,
-          speed,
-          mouseDownRotation,
-          mouseDownX,
-          mouseDownY,
-          mouseX,
-          mouseY,
-          trackballAngle
-        );
-      }
+  });
 
-    });
+  glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {
+    screen->scrollCallbackEvent(x, y);
 
-    glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {
-      screen->scrollCallbackEvent(x, y);
+    float deltaY = y;
+    std::cout << deltaY << std::endl;
+    if (deltaY != 0) {
+      float mult = (1.0 + ((deltaY>0) ? 1.0 : -1.0) * 0.05);
+      const float minZoom = 0.1f;
+      cameraZoom = (cameraZoom * mult > minZoom ? cameraZoom * mult : minZoom);
+    }
 
-      float deltaY = y;
-      std::cout << deltaY << std::endl;
-      if (deltaY != 0) {
-        float mult = (1.0 + ((deltaY>0) ? 1.0 : -1.0) * 0.05);
-        const float minZoom = 0.1f;
-        cameraZoom = (cameraZoom * mult > minZoom ? cameraZoom * mult : minZoom);
-      }
+  });
 
-    });
+  glfwSetFramebufferSizeCallback(window, [](GLFWwindow *, int width, int height) {
+    screen->resizeCallbackEvent(width, height);
+  });
 
-    glfwSetFramebufferSizeCallback(window, [](GLFWwindow *, int width, int height) {
-      screen->resizeCallbackEvent(width, height);
-    });
-
-  }
+}
 
 
 
