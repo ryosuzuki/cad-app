@@ -5,8 +5,8 @@
 void Mesh::set(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces) {
   this->vertices = vertices;
   this->faces = faces;
-  this->computeFaceNormals(vertices, faces, this->faceNormals);
-  this->computeVertexNormals(vertices, faces, this->vertexNormals);
+  // this->computeFaceNormals(vertices, faces, this->faceNormals);
+  // this->computeVertexNormals(vertices, faces, this->vertexNormals);
 }
 
 void Mesh::computeFaceNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::MatrixXd &N) {

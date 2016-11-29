@@ -23,5 +23,13 @@ public:
   Eigen::MatrixXd faceUvs;
   Eigen::MatrixXi vertexUvs;
 
+  Eigen::MatrixXd faceAmbient;
+  Eigen::MatrixXd faceDiffuse;
+  Eigen::MatrixXd faceSpecular;
+
+  Eigen::MatrixXd vertexAmbient;
+  Eigen::MatrixXd vertexDiffuse;
+  Eigen::MatrixXd vertexSpecular;
+
 };
 

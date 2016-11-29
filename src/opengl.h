@@ -14,29 +14,32 @@ public:
   Shader shaderMesh;
 
   GLuint vaoMesh;
-  GLuint vboVertices; // Vertices of the current mesh (#V x 3)
-  GLuint vboVertexUvs; // UV coordinates for the current mesh (#V x 2)
-  GLuint vboVertexNormals; // Vertices of the current mesh (#V x 3)
-  GLuint vboVertexAmbientMaterials; // Ambient material  (#V x 3)
-  GLuint vboVertexDiffuseMaterials; // Diffuse material  (#V x 3)
-  GLuint vboVertexSpecularMaterials; // Specular material  (#V x 3)
+  GLuint vboVertices;
+  GLuint vboVertexUvs;
+  GLuint vboVertexNormals;
+  GLuint vboVertexAmbient;
+  GLuint vboVertexDiffuse;
+  GLuint vboVertexSpecular;
 
-  GLuint vboFaces; // Faces of the mesh (#F x 3)
-  GLuint vboTextures; // Texture
+  GLuint vboFaces;
+  GLuint vboFaceAmbient;
+  GLuint vboFaceDiffuse;
+  GLuint vboFaceSpecular;
+  GLuint vboTextures;
 
-  // Temporary copy of the content of each VBO
+
   Eigen::MatrixXf vertices;
   Eigen::MatrixXf vertexNormals;
-  Eigen::MatrixXf vertexAmbientMaterials;
-  Eigen::MatrixXf vertexDiffuseMaterials;
-  Eigen::MatrixXf vertexSpecularMaterials;
+  Eigen::MatrixXf vertexAmbient;
+  Eigen::MatrixXf vertexDiffuse;
+  Eigen::MatrixXf vertexSpecular;
   Eigen::MatrixXf vertexUvs;
 
   int u;
   int v;
   Eigen::Matrix<char,Eigen::Dynamic,1> textures;
-
   Eigen::Matrix<unsigned, Eigen::Dynamic, Eigen::Dynamic> faces;
+
 
   void init();
   void initBuffers();

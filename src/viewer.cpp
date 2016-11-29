@@ -19,7 +19,7 @@ Eigen::Matrix4f viewMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f projMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
 
-Eigen::Vector4f lineColor(0.0f, 0.0f, 0.0f, 1.0f);
+Eigen::Vector4f lineColor(1.0f, 1.0f, 1.0f, 1.0f);
 Eigen::Vector3f cameraEye(0, 0, 5);
 Eigen::Vector3f cameraCenter(0, 0, 0);
 Eigen::Vector3f cameraUp(0, 1, 0);
@@ -55,6 +55,9 @@ void Viewer::init() {
   glfwWindowHint(GLFW_STENCIL_BITS, 8);
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+
+  // glEnable(GL_DEPTH_TEST);
+  // glEnable(GL_LIGHTING);
 
   window = glfwCreateWindow(800, 800, "CAD app", nullptr, nullptr);
   glfwMakeContextCurrent(window);
@@ -116,7 +119,11 @@ void Viewer::launch() {
 
   opengl.init();
 
-  while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
+  while (!glfwWindowShouldClose(window)) {
+
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
+      break;
+    }
 
     glfwPollEvents();
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -188,33 +195,6 @@ void Viewer::launch() {
 
     // Set model parameters
     float mat[16];
-    /*
-    float quat[4];
-    quat = trackballAngle.coeffs().data();
-    float yy2 = 2.0f * quat[1] * quat[1];
-    float xy2 = 2.0f * quat[0] * quat[1];
-    float xz2 = 2.0f * quat[0] * quat[2];
-    float yz2 = 2.0f * quat[1] * quat[2];
-    float zz2 = 2.0f * quat[2] * quat[2];
-    float wz2 = 2.0f * quat[3] * quat[2];
-    float wy2 = 2.0f * quat[3] * quat[1];
-    float wx2 = 2.0f * quat[3] * quat[0];
-    float xx2 = 2.0f * quat[0] * quat[0];
-    mat[0*4+0] = - yy2 - zz2 + 1.0f;
-    mat[0*4+1] = xy2 + wz2;
-    mat[0*4+2] = xz2 - wy2;
-    mat[0*4+3] = 0;
-    mat[1*4+0] = xy2 - wz2;
-    mat[1*4+1] = - xx2 - zz2 + 1.0f;
-    mat[1*4+2] = yz2 + wx2;
-    mat[1*4+3] = 0;
-    mat[2*4+0] = xz2 + wy2;
-    mat[2*4+1] = yz2 - wx2;
-    mat[2*4+2] = - xx2 - yy2 + 1.0f;
-    mat[2*4+3] = 0;
-    mat[3*4+0] = mat[3*4+1] = mat[3*4+2] = 0;
-    mat[3*4+3] = 1;
-    */
     igl::quat_to_mat(trackballAngle.coeffs().data(), mat);
     for (unsigned i=0;i<4;++i) {
       for (unsigned j=0;j<4;++j) {
@@ -235,24 +215,25 @@ void Viewer::launch() {
 
     // Set light parameters
     float shininess = 35.0f;
-    float factor = 1.0f;
+    float lightOn = 1.0f;
     Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
-    Eigen::Vector3f revLight = -1.*lightPosition;
 
     // Send light parameters
     GLint specularExponent = opengl.shaderMesh.uniform("specular_exponent");
     GLint lightPositionWorld = opengl.shaderMesh.uniform("light_position_world");
     GLint lightingFactor = opengl.shaderMesh.uniform("lighting_factor");
-    glUniform1f(specularExponent, shininess);
-    glUniform3fv(lightPositionWorld, 1, revLight.data());
-    glUniform1f(lightingFactor, factor);
+    GLint fixedColor = opengl.shaderMesh.uniform("fixed_color");
+    GLint textureFactor = opengl.shaderMesh.uniform("texture_factor");
 
-    // Set texture parameters
+    glUniform1f(specularExponent, shininess);
+    Eigen::Vector3f revLight = -1.*lightPosition;
+    glUniform3fv(lightPositionWorld, 1, revLight.data());
+    glUniform1f(lightingFactor, lightOn);
+    glUniform4f(fixedColor, 0, 0, 1.0, 1.0);
 
     // Send texture paramters
-    GLint textureFactor = opengl.shaderMesh.uniform("texture_factor");
-    GLint fixedColor = opengl.shaderMesh.uniform("fixed_color");
     if (wireframe) {
+      glEnable(GL_LINE_SMOOTH);
       glLineWidth(lineWidth);
       glUniform4f(fixedColor, lineColor[0], lineColor[1],
         lineColor[2], 1.0f);
@@ -260,7 +241,7 @@ void Viewer::launch() {
       glUniform4f(fixedColor, 0.0f, 0.0f, 0.0f, 0.0f);
     } else {
       glUniform1f(textureFactor, 1.0f);
-      opengl.drawMesh();
+      opengl.drawMesh(true);
       glUniform1f(textureFactor, 0.0f);
     }
 
@@ -363,82 +344,6 @@ void Viewer::setCallbacks() {
   });
 
 }
-
-
-
-/*
-computeMatricesFromInputs();
-glm::mat4 ProjectionMatrix = getProjectionMatrix();
-glm::mat4 ViewMatrix = getViewMatrix();
-glm::mat4 ModelMatrix = glm::mat4(1.0);
-glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-
-// Send our transformation to the currently bound shader,
-// in the "MVP" uniform
-glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-// Bind our texture in Texture Unit 0
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, Texture);
-// Set our "myTextureSampler" sampler to user Texture Unit 0
-glUniform1i(TextureID, 0);
-
-// 1rst attribute buffer : vertices
-glEnableVertexAttribArray(0);
-*/
-
-/*
-shininess = 35.0f;
-
-// Default colors
-background_color << 0.3f, 0.3f, 0.5f, 1.0f;
-line_color << 0.0f, 0.0f, 0.0f, 1.0f;
-
-// Default lights settings
-light_position << 0.0f, -0.30f, -5.0f;
-lighting_factor = 1.0f; //on
-
-// Default trackball
-trackball_angle = Eigen::Quaternionf::Identity();
-set_rotation_type(ViewerCore::ROTATION_TYPE_TWO_AXIS_VALUATOR_FIXED_UP);
-
-// Defalut model viewing parameters
-model_zoom = 1.0f;
-model_translation << 0,0,0;
-
-// Camera parameters
-camera_zoom = 1.0f;
-orthographic = false;
-camera_view_angle = 45.0;
-camera_dnear = 1.0;
-camera_dfar = 100.0;
-camera_eye << 0, 0, 5;
-camera_center << 0, 0, 0;
-camera_up << 0, 1, 0;
-
-// Default visualization options
-show_faces = true;
-show_lines = true;
-invert_normals = false;
-show_overlay = true;
-show_overlay_depth = true;
-show_vertid = false;
-show_faceid = false;
-show_texture = false;
-depth_test = true;
-
-// Default point size / line width
-point_size = 30;
-line_width = 0.5f;
-is_animating = false;
-animation_max_fps = 30.;
-*/
-
-
-
-
-
-
 
 
 

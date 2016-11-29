@@ -10,12 +10,13 @@ void OpenGL::initBuffers() {
   glGenBuffers(1, &vboVertexNormals);
   glGenBuffers(1, &vboVertexUvs);
   glGenBuffers(1, &vboFaces);
-  /*
-  glGenBuffers(1, &vboVertexAmbientMaterials);
-  glGenBuffers(1, &vboVertexDiffuseMaterials);
-  glGenBuffers(1, &vboVertexSpecularMaterials);
+  glGenBuffers(1, &vboFaceAmbient);
+  glGenBuffers(1, &vboFaceDiffuse);
+  glGenBuffers(1, &vboFaceSpecular);
+  glGenBuffers(1, &vboVertexAmbient);
+  glGenBuffers(1, &vboVertexDiffuse);
+  glGenBuffers(1, &vboVertexSpecular);
   glGenTextures(1, &vboTextures);
-  */
 }
 
 void OpenGL::freeBuffers() {
@@ -24,12 +25,13 @@ void OpenGL::freeBuffers() {
   glDeleteBuffers(1, &vboVertexNormals);
   glDeleteBuffers(1, &vboVertexUvs);
   glDeleteBuffers(1, &vboFaces);
-  /*
-  glDeleteBuffers(1, &vboVertexAmbientMaterials);
-  glDeleteBuffers(1, &vboVertexDiffuseMaterials);
-  glDeleteBuffers(1, &vboVertexSpecularMaterials);
+  glDeleteBuffers(1, &vboFaceAmbient);
+  glDeleteBuffers(1, &vboFaceDiffuse);
+  glDeleteBuffers(1, &vboFaceSpecular);
+  glDeleteBuffers(1, &vboVertexAmbient);
+  glDeleteBuffers(1, &vboVertexDiffuse);
+  glDeleteBuffers(1, &vboVertexSpecular);
   glDeleteTextures(1, &vboTextures);
-  */
 }
 
 
@@ -38,12 +40,9 @@ void OpenGL::setMesh(const Mesh &mesh) {
   vertexNormals = (mesh.vertexNormals.transpose()).cast<float>();
   faces = (mesh.faces.transpose()).cast<unsigned>();
   vertexUvs = (mesh.vertexUvs.transpose()).cast<float>();
-
-  /*
-  vertexAmbientMaterials = (mesh.vertexAmbientMaterials.transpose()).cast<float>();
-  vertexDiffuseMaterials = (mesh.vertexDiffuseMaterials.transpose()).cast<float>();
-  vertexSpecularMaterials = (mesh.vertexSpecularMaterials.transpose()).cast<float>();
-  */
+  vertexAmbient = (mesh.vertexAmbient.transpose()).cast<float>();
+  vertexDiffuse = (mesh.vertexDiffuse.transpose()).cast<float>();
+  vertexSpecular = (mesh.vertexSpecular.transpose()).cast<float>();
 }
 
 void OpenGL::bindMesh() {
@@ -51,12 +50,10 @@ void OpenGL::bindMesh() {
   shaderMesh.bind();
   shaderMesh.bindVertexAttribArray("position", vboVertices, vertices, true);
   shaderMesh.bindVertexAttribArray("normal", vboVertexNormals, vertexNormals, true);
-  /*
-  shaderMesh.bindVertexAttribArray("Ka", vboVertexAmbientMaterials, vertexAmbientMaterials, true);
-  shaderMesh.bindVertexAttribArray("Kd", vboVertexDiffuseMaterials, vertexDiffuseMaterials, true);
-  shaderMesh.bindVertexAttribArray("Ks", vboVertexSpecularMaterials, vertexSpecularMaterials, true);
+  shaderMesh.bindVertexAttribArray("Ka", vboVertexAmbient, vertexAmbient, true);
+  shaderMesh.bindVertexAttribArray("Kd", vboVertexDiffuse, vertexDiffuse, true);
+  shaderMesh.bindVertexAttribArray("Ks", vboVertexSpecular, vertexSpecular, true);
   shaderMesh.bindVertexAttribArray("texcoord", vboVertexUvs, vertexUvs, true);
-  */
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboFaces);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned)*faces.size(), faces.data(), GL_DYNAMIC_DRAW);
 
@@ -135,24 +132,24 @@ void OpenGL::init() {
   "out vec4 outColor;"
   "void main()"
   "{"
-  "  vec3 Ia = La * Kai;"    // ambient intensity
+  "vec3 Ia = La * Kai;"    // ambient intensity
 
-  "  vec3 light_position_eye = vec3 (view * vec4 (light_position_world, 1.0));"
-  "  vec3 vector_to_light_eye = light_position_eye - position_eye;"
-  "  vec3 direction_to_light_eye = normalize (vector_to_light_eye);"
-  "  float dot_prod = dot (direction_to_light_eye, normal_eye);"
-  "  float clampedDot_prod = max (dot_prod, 0.0);"
-  "  vec3 Id = Ld * Kdi * clampedDot_prod;"    // Diffuse intensity
+  "vec3 light_position_eye = vec3 (view * vec4 (light_position_world, 1.0));"
+  "vec3 vector_to_light_eye = light_position_eye - position_eye;"
+  "vec3 direction_to_light_eye = normalize (vector_to_light_eye);"
+  "float dot_prod = dot (direction_to_light_eye, normal_eye);"
+  "float clamped_dot_prod = max (dot_prod, 0.0);"
+  "vec3 Id = Ld * Kdi * clamped_dot_prod;"    // Diffuse intensity
 
-  "  vec3 reflection_eye = reflect (-direction_to_light_eye, normal_eye);"
-  "  vec3 surface_to_viewer_eye = normalize (-position_eye);"
-  "  float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);"
-  "  dot_prod_specular = float(abs(dot_prod)==dot_prod) * max (dot_prod_specular, 0.0);"
-  "  float specular_factor = pow (dot_prod_specular, specular_exponent);"
-  "  vec3 Is = Ls * Ksi * specular_factor;"    // specular intensity
-  "  vec4 color = vec4(lighting_factor * (Is + Id) + Ia, 1.0) + vec4((1.0-lighting_factor) * Kdi,1.0);"
-  "  outColor = mix(vec4(1,1,1,1), texture(tex, texcoordi), texture_factor) * color;"
-  "  if (fixed_color != vec4(0.0)) outColor = fixed_color;"
+  "vec3 reflection_eye = reflect (-direction_to_light_eye, normal_eye);"
+  "vec3 surface_to_viewer_eye = normalize (-position_eye);"
+  "float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);"
+  "dot_prod_specular = float(abs(dot_prod)==dot_prod) * max (dot_prod_specular, 0.0);"
+  "float specular_factor = pow (dot_prod_specular, specular_exponent);"
+  "vec3 Is = Ls * Ksi * specular_factor;"    // specular intensity
+  "vec4 color = vec4(lighting_factor * (Is + Id) + Ia, 1.0) + vec4((1.0-lighting_factor) * Kdi,1.0);"
+  "outColor = mix(vec4(1,1,1,1), texture(tex, texcoordi), texture_factor) * color;"
+  "if (fixed_color != vec4(0.0)) outColor = fixed_color;"
   "}";
 
   initBuffers();
