@@ -24,10 +24,10 @@ Eigen::Matrix4f projMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
 Eigen::Quaternionf arcballQuat = Eigen::Quaternionf::Identity();
 
-Eigen::Vector3f center(0, 0, 0);
+Eigen::Vector3f center(0, 1, 0);
 Eigen::Vector4f lineColor(1.0f, 1.0f, 1.0f, 1.0f);
 Eigen::Vector3f cameraEye(0, 0, 5);
-Eigen::Vector3f cameraCenter(0, 0, 0);
+Eigen::Vector3f cameraCenter(0, 1, 0);
 Eigen::Vector3f cameraUp(0, 1, 0);
 Eigen::Vector3f modelTranslation(0, 0, 0);
 Eigen::Vector4f viewport(0, 0, 800, 800);
@@ -250,7 +250,7 @@ void Viewer::setCallbacks() {
       mouseDownX = currentMouseX;
       mouseDownY = currentMouseY;
       mouseDownZ = coord[2];
-      mouseDownRotation = arcballQuat;
+      mouseDownRotation = arcballQuat.normalized();
     } else {
       mouseDown = false;
     }
@@ -270,8 +270,8 @@ void Viewer::setCallbacks() {
     double speed = 2.0;
     if (mouseDown) {
       std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
-      Eigen::Quaternionf diffRotation = control.motion(width, height, mouseDownX, mouseDownY, mouseX, mouseY, speed);
-      arcballQuat = (diffRotation * mouseDownRotation).normalized();
+      Eigen::Quaternionf diffRotation = control.motion(width, height, mouseX, mouseY, mouseDownX, mouseDownY, speed);
+      arcballQuat = diffRotation * mouseDownRotation;
     }
 
   });
