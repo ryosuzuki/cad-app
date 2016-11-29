@@ -9,11 +9,7 @@
 #include <igl/two_axis_valuator_fixed_up.h>
 #include <igl/quat_to_mat.h>
 
-#ifdef __APPLE__
-#include <OpenGL/gl3.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <nanogui/glutil.h>
 
 #include "mesh.h"
 #include "opengl.h"

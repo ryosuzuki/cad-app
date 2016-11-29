@@ -5,11 +5,7 @@
 #include <iostream>
 #include <fstream>
 
-#ifdef __APPLE__
-#include <OpenGL/gl3.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <nanogui/glutil.h>
 
 class Shader {
 public:
