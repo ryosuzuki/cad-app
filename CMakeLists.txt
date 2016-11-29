@@ -31,7 +31,6 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/external/nanogui/include
   ${NANOGUI_EXTRA_INCS} # Eigen, GLFW, NanoVG, GLAD
   ${CMAKE_CURRENT_SOURCE_DIR}/external/libigl/include
-  ${CMAKE_CURRENT_BINARY_DIR}/external/eigen
 )
 
 add_executable(cad-app

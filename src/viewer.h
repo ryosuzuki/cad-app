@@ -9,8 +9,8 @@
 #include <igl/two_axis_valuator_fixed_up.h>
 #include <igl/quat_to_mat.h>
 
-#include <OpenGL/gl3.h>
-#include <GLFW/glfw3.h>
+// #include <OpenGL/gl3.h>
+// #include <GLFW/glfw3.h>
 
 #include "mesh.h"
 #include "opengl.h"
