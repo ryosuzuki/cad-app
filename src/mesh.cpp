@@ -75,16 +75,3 @@ void Mesh::computeVertexNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi 
   }
   std::cout << "done." << std::endl;
 }
-
-
-
-
-// void Mesh::setUv(const Eigen::MatrixXd &vertexUvs, const Eigen::MatrixXi &faceUvs) {
-//   this->vertexUvs = vertexUvs;
-//   this->faceUvs = faceUvs;
-// }
-
-// void Mesh::computeNormals() {
-//   igl::per_face_normals(vertices, faces, faceNormals);
-//   igl::per_vertex_normals(vertices, faces, vertexNormals);
-// }

@@ -5,10 +5,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <igl/per_face_normals.h>
-#include <igl/per_vertex_normals.h>
-
-
 class Mesh {
 public:
   void set(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
