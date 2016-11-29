@@ -19,9 +19,10 @@ public:
   void init();
   void launch();
 
-  void setCallbacks();
   void load();
   void save();
+  void setCallbacks();
+  void computeCameraMatries();
 
   GLFWwindow *window;
   // nanogui::Screen *screen;

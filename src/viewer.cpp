@@ -4,6 +4,10 @@
 using namespace nanogui;
 
 nanogui::Screen *screen = nullptr;
+Control control;
+
+float width = 800;
+float height = 800;
 
 bool mouseDown = false;
 bool orthographic = false;
@@ -14,17 +18,18 @@ float cameraFar = 100.0;
 float lineWidth = 0.5f;
 float cameraZoom = 3.0f;
 float modelZoom = 3.0f;
-Eigen::Quaternionf trackballAngle = Eigen::Quaternionf::Identity();
+
 Eigen::Matrix4f viewMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f projMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
+Eigen::Quaternionf arcballQuat = Eigen::Quaternionf::Identity();
 
+Eigen::Vector3f center(0, 0, 0);
 Eigen::Vector4f lineColor(1.0f, 1.0f, 1.0f, 1.0f);
 Eigen::Vector3f cameraEye(0, 0, 5);
 Eigen::Vector3f cameraCenter(0, 0, 0);
 Eigen::Vector3f cameraUp(0, 1, 0);
 Eigen::Vector3f modelTranslation(0, 0, 0);
-
 Eigen::Vector4f viewport(0, 0, 800, 800);
 
 
@@ -59,11 +64,9 @@ void Viewer::init() {
   // glEnable(GL_DEPTH_TEST);
   // glEnable(GL_LIGHTING);
 
-  window = glfwCreateWindow(800, 800, "CAD app", nullptr, nullptr);
+  window = glfwCreateWindow(width, height, "CAD app", nullptr, nullptr);
   glfwMakeContextCurrent(window);
 
-  int width, height;
-  glfwGetFramebufferSize(window, &width, &height);
   glViewport(0, 0, width, height);
   glfwSwapInterval(0);
   glfwSwapBuffers(window);
@@ -110,6 +113,42 @@ void Viewer::save() {
 }
 
 
+void Viewer::computeCameraMatries() {
+
+  modelMatrix = Eigen::Matrix4f::Identity();
+  viewMatrix = Eigen::Matrix4f::Identity();
+  projMatrix = Eigen::Matrix4f::Identity();
+
+  // Set view parameters
+  viewMatrix = control.lookAt(cameraEye, cameraCenter, cameraUp);
+
+  // Set projection paramters
+  if (orthographic) {
+    float length = (cameraEye - cameraCenter).norm();
+    float h = tan(cameraViewAngle/360.0 * M_PI) * (length);
+    float left = -h * width / height;
+    float right = h * width / height;
+    float bottom = -h;
+    float top = h;
+    projMatrix = control.ortho(left, right, bottom, top, cameraNear, cameraFar);
+  } else {
+    float fH = tan(cameraViewAngle / 360.0 * M_PI) * cameraNear;
+    float fW = fH * width / height;
+    float left = -fW;
+    float right = fW;
+    float bottom = -fH;
+    float top = fH;
+    projMatrix = control.frustum(left, right, bottom, top, cameraNear, cameraFar);
+  }
+
+  // Set model parameters
+  modelMatrix = control.quatToMatrix(arcballQuat);
+  modelMatrix.topLeftCorner(3,3) *= cameraZoom;
+  modelMatrix.topLeftCorner(3,3) *= modelZoom;
+  modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3,3)*modelTranslation;
+
+}
+
 void Viewer::launch() {
   init();
   setCallbacks();
@@ -128,7 +167,7 @@ void Viewer::launch() {
     float ratio;
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    ratio = width / (float) height;
+    ratio = width / height;
     glViewport(0, 0, width, height);
 
     opengl.setMesh(mesh);
@@ -136,70 +175,7 @@ void Viewer::launch() {
 
     // Set transformaition parameters
 
-    modelMatrix = Eigen::Matrix4f::Identity();
-    viewMatrix = Eigen::Matrix4f::Identity();
-    projMatrix = Eigen::Matrix4f::Identity();
-
-    // Set view parameters
-    Vector3f f = (cameraCenter - cameraEye).normalized();
-    Vector3f s = f.cross(cameraUp).normalized();
-    Vector3f u = s.cross(f);
-    viewMatrix(0,0) = s(0);
-    viewMatrix(0,1) = s(1);
-    viewMatrix(0,2) = s(2);
-    viewMatrix(1,0) = u(0);
-    viewMatrix(1,1) = u(1);
-    viewMatrix(1,2) = u(2);
-    viewMatrix(2,0) =-f(0);
-    viewMatrix(2,1) =-f(1);
-    viewMatrix(2,2) =-f(2);
-    viewMatrix(0,3) =-s.transpose() * cameraEye;
-    viewMatrix(1,3) =-u.transpose() * cameraEye;
-    viewMatrix(2,3) = f.transpose() * cameraEye;
-
-    // Set projection paramters
-    if (orthographic) {
-      float length = (cameraEye - cameraCenter).norm();
-      float h = tan(cameraViewAngle/360.0 * M_PI) * (length);
-      float left = -h*(double)width/(double)height;
-      float right = h*(double)width/(double)height;
-      float bottom = -h;
-      float top = h;
-      projMatrix.setIdentity();
-      projMatrix(0,0) = 2. / (right - left);
-      projMatrix(1,1) = 2. / (top - bottom);
-      projMatrix(2,2) = - 2./ (cameraFar - cameraNear);
-      projMatrix(0,3) = - (right + left) / (right - left);
-      projMatrix(1,3) = - (top + bottom) / (top - bottom);
-      projMatrix(2,3) = - (cameraFar + cameraNear) / (cameraFar - cameraNear);
-    } else {
-      float fH = tan(cameraViewAngle / 360.0 * M_PI) * cameraNear;
-      float fW = fH * (double)width/(double)height;
-      float left = -fW;
-      float right = fW;
-      float bottom = -fH;
-      float top = fH;
-      projMatrix.setConstant(4,4,0.);
-      projMatrix(0,0) = (2.0 * cameraNear) / (right - left);
-      projMatrix(1,1) = (2.0 * cameraNear) / (top - bottom);
-      projMatrix(0,2) = (right + left) / (right - left);
-      projMatrix(1,2) = (top + bottom) / (top - bottom);
-      projMatrix(2,2) = -(cameraFar + cameraNear) / (cameraFar - cameraNear);
-      projMatrix(3,2) = -1.0;
-      projMatrix(2,3) = -(2.0 * cameraFar * cameraNear) / (cameraFar - cameraNear);
-    }
-
-    // Set model parameters
-    float mat[16];
-    igl::quat_to_mat(trackballAngle.coeffs().data(), mat);
-    for (unsigned i=0;i<4;++i) {
-      for (unsigned j=0;j<4;++j) {
-        modelMatrix(i, j) = mat[i+4*j];
-      }
-    }
-    modelMatrix.topLeftCorner(3,3) *= cameraZoom;
-    modelMatrix.topLeftCorner(3,3) *= modelZoom;
-    modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3,3)*modelTranslation;
+    computeCameraMatries();
 
     // Send transformaition parameters
     GLint model = opengl.shaderMesh.uniform("model");
@@ -269,22 +245,12 @@ void Viewer::setCallbacks() {
 
     if (action == GLFW_PRESS) {
       mouseDown = true;
-      Eigen::Vector3f coord;
-      Eigen::Vector4f tmp;
-      Eigen::Vector3f center(0, 0, 0);
-      tmp << center,1;
-      tmp = viewMatrix * modelMatrix * tmp;
-      tmp = projMatrix * tmp;
-      tmp = tmp.array() / tmp(3);
-      tmp = tmp.array() * 0.5f + 0.5f;
-      tmp(0) = tmp(0) * viewport(2) + viewport(0);
-      tmp(1) = tmp(1) * viewport(3) + viewport(1);
-      coord = tmp.head(3);
+      Eigen::Vector3f coord = control.project(center, modelMatrix, projMatrix, viewMatrix, viewport);
 
       mouseDownX = currentMouseX;
       mouseDownY = currentMouseY;
       mouseDownZ = coord[2];
-      mouseDownRotation = trackballAngle;
+      mouseDownRotation = arcballQuat;
     } else {
       mouseDown = false;
     }
@@ -301,23 +267,11 @@ void Viewer::setCallbacks() {
     currentMouseX = x;
     currentMouseY = y;
 
-    float width = viewport(2);
-    float height = viewport(3);
     double speed = 2.0;
-
     if (mouseDown) {
       std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
-      igl::two_axis_valuator_fixed_up(
-        width,
-        height,
-        speed,
-        mouseDownRotation,
-        mouseDownX,
-        mouseDownY,
-        mouseX,
-        mouseY,
-        trackballAngle
-      );
+      Eigen::Quaternionf diffRotation = control.motion(width, height, mouseDownX, mouseDownY, mouseX, mouseY, speed);
+      arcballQuat = (diffRotation * mouseDownRotation).normalized();
     }
 
   });
