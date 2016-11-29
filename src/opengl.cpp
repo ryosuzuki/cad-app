@@ -6,31 +6,43 @@
 void OpenGL::initBuffers() {
   glGenVertexArrays(1, &vaoMesh);
   glBindVertexArray(vaoMesh);
+
   glGenBuffers(1, &vboVertices);
   glGenBuffers(1, &vboVertexNormals);
   glGenBuffers(1, &vboVertexUvs);
+
   glGenBuffers(1, &vboFaces);
+  glGenBuffers(1, &vboFaceNormals);
+
   glGenBuffers(1, &vboFaceAmbient);
   glGenBuffers(1, &vboFaceDiffuse);
   glGenBuffers(1, &vboFaceSpecular);
+
   glGenBuffers(1, &vboVertexAmbient);
   glGenBuffers(1, &vboVertexDiffuse);
   glGenBuffers(1, &vboVertexSpecular);
+
   glGenTextures(1, &vboTextures);
 }
 
 void OpenGL::freeBuffers() {
   glDeleteVertexArrays(1, &vaoMesh);
+
   glDeleteBuffers(1, &vboVertices);
   glDeleteBuffers(1, &vboVertexNormals);
   glDeleteBuffers(1, &vboVertexUvs);
+
   glDeleteBuffers(1, &vboFaces);
+  glDeleteBuffers(1, &vboFaceNormals);
+
   glDeleteBuffers(1, &vboFaceAmbient);
   glDeleteBuffers(1, &vboFaceDiffuse);
   glDeleteBuffers(1, &vboFaceSpecular);
+
   glDeleteBuffers(1, &vboVertexAmbient);
   glDeleteBuffers(1, &vboVertexDiffuse);
   glDeleteBuffers(1, &vboVertexSpecular);
+
   glDeleteTextures(1, &vboTextures);
 }
 
@@ -38,7 +50,10 @@ void OpenGL::freeBuffers() {
 void OpenGL::setMesh(const Mesh &mesh) {
   vertices = (mesh.vertices.transpose()).cast<float>();
   vertexNormals = (mesh.vertexNormals.transpose()).cast<float>();
+
   faces = (mesh.faces.transpose()).cast<unsigned>();
+  faceNormals = (mesh.faceNormals.transpose()).cast<unsigned>();
+
   vertexUvs = (mesh.vertexUvs.transpose()).cast<float>();
   vertexAmbient = (mesh.vertexAmbient.transpose()).cast<float>();
   vertexDiffuse = (mesh.vertexDiffuse.transpose()).cast<float>();
@@ -49,7 +64,7 @@ void OpenGL::bindMesh() {
   glBindVertexArray(vaoMesh);
   shaderMesh.bind();
   shaderMesh.bindVertexAttribArray("position", vboVertices, vertices, true);
-  shaderMesh.bindVertexAttribArray("normal", vboVertexNormals, vertexNormals, true);
+  shaderMesh.bindVertexAttribArray("normal", vboFaceNormals, vertexNormals, true);
   shaderMesh.bindVertexAttribArray("Ka", vboVertexAmbient, vertexAmbient, true);
   shaderMesh.bindVertexAttribArray("Kd", vboVertexDiffuse, vertexDiffuse, true);
   shaderMesh.bindVertexAttribArray("Ks", vboVertexSpecular, vertexSpecular, true);

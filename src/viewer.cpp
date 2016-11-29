@@ -165,10 +165,10 @@ void Viewer::launch() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     float ratio;
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    ratio = width / height;
-    glViewport(0, 0, width, height);
+    int frameWidth, frameHeight;
+    glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
+    ratio = frameWidth / (float)frameHeight;
+    glViewport(0, 0, frameWidth, frameHeight);
 
     opengl.setMesh(mesh);
     opengl.bindMesh();

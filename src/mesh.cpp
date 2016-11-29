@@ -5,14 +5,13 @@
 void Mesh::set(const Eigen::MatrixXd &vertices, const Eigen::MatrixXi &faces) {
   this->vertices = vertices;
   this->faces = faces;
-  // this->computeFaceNormals(vertices, faces, this->faceNormals);
+  this->computeFaceNormals(vertices, faces, this->faceNormals);
   // this->computeVertexNormals(vertices, faces, this->vertexNormals);
 }
 
 void Mesh::computeFaceNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::MatrixXd &N) {
 
-  std::cout << "Computing face normals .. " << std::endl;
-  std::cout << F.rows() << std::endl;
+  std::cout << "Computing face normals .. ";
 
   N.resize(F.rows(), 3);
 
@@ -29,7 +28,7 @@ void Mesh::computeFaceNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F
     }
     N.row(f) /= N.row(f).norm();
   }
-  // std::cout << N << std::endl;
+  std::cout << "done." << std::endl;
 }
 
 void Mesh::computeVertexNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::MatrixXd &N) {

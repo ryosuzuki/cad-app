@@ -22,11 +22,11 @@ public:
   GLuint vboVertexSpecular;
 
   GLuint vboFaces;
+  GLuint vboFaceNormals;
   GLuint vboFaceAmbient;
   GLuint vboFaceDiffuse;
   GLuint vboFaceSpecular;
   GLuint vboTextures;
-
 
   Eigen::MatrixXf vertices;
   Eigen::MatrixXf vertexNormals;
