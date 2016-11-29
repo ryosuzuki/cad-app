@@ -4,7 +4,6 @@
 #include <Eigen/Core>
 #include <iostream>
 #include <fstream>
-
 #include <nanogui/glutil.h>
 
 class Shader {

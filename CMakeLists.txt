@@ -45,6 +45,7 @@ add_executable(cad-app
   src/mesh.h src/mesh.cpp
   src/opengl.h src/opengl.cpp
   src/shader.h src/shader.cpp
+  src/control.h src/control.cpp
 )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
