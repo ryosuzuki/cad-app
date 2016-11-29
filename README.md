@@ -28,6 +28,9 @@ Run the application
 $ ./cad-app
 ```
 
+Stop the application with `Ctrl-C` in terminal.
+
+
 # How to play
 
 ## Step.1: Load the OBJ file from your computer.

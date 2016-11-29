@@ -119,11 +119,7 @@ void Viewer::launch() {
 
   opengl.init();
 
-  while (!glfwWindowShouldClose(window)) {
-
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
-      break;
-    }
+  while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
 
     glfwPollEvents();
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -229,7 +225,7 @@ void Viewer::launch() {
     Eigen::Vector3f revLight = -1.*lightPosition;
     glUniform3fv(lightPositionWorld, 1, revLight.data());
     glUniform1f(lightingFactor, lightOn);
-    glUniform4f(fixedColor, 0, 0, 1.0, 1.0);
+    glUniform4f(fixedColor, 1.0, 1.0, 1.0, 1.0);
 
     // Send texture paramters
     if (wireframe) {
