@@ -2,10 +2,14 @@
 #pragma once
 
 #include <Eigen/Core>
-// #include <GL/glew.h>
-#include <OpenGL/gl3.h>
 #include <iostream>
 #include <fstream>
+
+#ifdef __APPLE__
+#include <OpenGL/gl3.h>
+#else
+#include <GL/glut.h>
+#endif
 
 class Shader {
 public:
