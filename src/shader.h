@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 // #include <GL/glew.h>
-#include <OpenGL/gl3.h>
+// #include <OpenGL/gl3.h>
 #include <iostream>
 #include <fstream>
 
