@@ -7,7 +7,7 @@ rysu7393
 
 # Compiling
 
-For Linux (Ubuntu), you should first install dependencies.
+For Linux (Ubuntu), you should first install dependencies. (Tested with Ubuntu 16.04 LTS)
 
 ```
 $ apt-get install cmake xorg-dev libglu1-mesa-dev
