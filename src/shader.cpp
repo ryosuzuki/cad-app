@@ -1,6 +1,60 @@
 
 #include "shader.h"
 
+static GLuint createShader_helper(GLint type, const std::string &name, const std::string &defines, std::string shader_string) {
+  if (shader_string.empty()) {
+    return (GLuint) 0;
+  }
+
+  if (!defines.empty()) {
+    if (shader_string.length() > 8 && shader_string.substr(0, 8) == "#version") {
+      std::istringstream iss(shader_string);
+      std::ostringstream oss;
+      std::string line;
+      std::getline(iss, line);
+      oss << line << std::endl;
+      oss << defines;
+      while (std::getline(iss, line)) {
+        oss << line << std::endl;
+      }
+      shader_string = oss.str();
+    }
+    else {
+      shader_string = defines + shader_string;
+    }
+  }
+
+  GLuint id = glCreateShader(type);
+  const char *shader_string_const = shader_string.c_str();
+  glShaderSource(id, 1, &shader_string_const, nullptr);
+  glCompileShader(id);
+
+  GLint status;
+  glGetShaderiv(id, GL_COMPILE_STATUS, &status);
+
+  if (status != GL_TRUE) {
+    char buffer[512];
+    std::cerr << "Error while compiling ";
+
+    if (type == GL_VERTEX_SHADER) {
+      std::cerr << "vertex shader";
+    }
+    else if (type == GL_FRAGMENT_SHADER) {
+      std::cerr << "fragment shader";
+    }
+    else if (type == GL_GEOMETRY_SHADER) {
+      std::cerr << "geometry shader";
+    }
+    std::cerr << " \"" << name << "\":" << std::endl;
+    std::cerr << shader_string << std::endl << std::endl;
+    glGetShaderInfoLog(id, 512, nullptr, buffer);
+    std::cerr << "Error: " << std::endl << buffer << std::endl;
+    throw std::runtime_error("Shader compilation failed!");
+  }
+
+  return id;
+}
+
 bool GLShader::initFromFiles(const std::string &name, const std::string &vertex_fname, const std::string &fragment_fname, const std::string &geometry_fname) {
   auto file_to_string = [](const std::string & filename) -> std::string {
     if (filename.empty()) {
@@ -255,7 +309,7 @@ void GLUniformBuffer::update(const std::vector<uint8_t> &data) {
 
 //  ----------------------------------------------------
 
-void GLFramebuffer::init(const Vector2i &size, int nSamples) {
+void GLFramebuffer::init(const Eigen::Vector2i &size, int nSamples) {
   mSize = size;
   mSamples = nSamples;
 
@@ -369,57 +423,5 @@ void GLFramebuffer::downloadTGA(const std::string &filename) {
 }
 
 
-static GLuint createShader_helper(GLint type, const std::string &name, const std::string &defines, std::string shader_string) {
-  if (shader_string.empty()) {
-    return (GLuint) 0;
-  }
 
-  if (!defines.empty()) {
-    if (shader_string.length() > 8 && shader_string.substr(0, 8) == "#version") {
-      std::istringstream iss(shader_string);
-      std::ostringstream oss;
-      std::string line;
-      std::getline(iss, line);
-      oss << line << std::endl;
-      oss << defines;
-      while (std::getline(iss, line)) {
-        oss << line << std::endl;
-      }
-      shader_string = oss.str();
-    }
-    else {
-      shader_string = defines + shader_string;
-    }
-  }
-
-  GLuint id = glCreateShader(type);
-  const char *shader_string_const = shader_string.c_str();
-  glShaderSource(id, 1, &shader_string_const, nullptr);
-  glCompileShader(id);
-
-  GLint status;
-  glGetShaderiv(id, GL_COMPILE_STATUS, &status);
-
-  if (status != GL_TRUE) {
-    char buffer[512];
-    std::cerr << "Error while compiling ";
-
-    if (type == GL_VERTEX_SHADER) {
-      std::cerr << "vertex shader";
-    }
-    else if (type == GL_FRAGMENT_SHADER) {
-      std::cerr << "fragment shader";
-    }
-    else if (type == GL_GEOMETRY_SHADER) {
-      std::cerr << "geometry shader";
-    }
-    std::cerr << " \"" << name << "\":" << std::endl;
-    std::cerr << shader_string << std::endl << std::endl;
-    glGetShaderInfoLog(id, 512, nullptr, buffer);
-    std::cerr << "Error: " << std::endl << buffer << std::endl;
-    throw std::runtime_error("Shader compilation failed!");
-  }
-
-  return id;
-}
 

@@ -167,7 +167,7 @@ void Viewer::launch() {
   mesh.set(vertices, faces);
 
   // opengl.init();
-  shader.init("mesh_shader", (const char *)shader_mesh_vert, (const char *)shader_mesh_frag);
+  shader.initFromFiles("shader_mesh", "shader_mesh.vert", "shader_mesh.frag", "shader_mesh.geom");
 
   while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
 
@@ -181,39 +181,23 @@ void Viewer::launch() {
     ratio = frameWidth / (float)frameHeight;
     glViewport(0, 0, frameWidth, frameHeight);
 
-    opengl.setMesh(mesh);
-    opengl.bindMesh();
+    // opengl.setMesh(mesh);
+    // opengl.bindMesh();
 
     Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
-    Eigen::Vector3f fixedColor(0.0f, 0.0f, 0.0f, 0.0f);
+    Eigen::Vector3f fixedColor(0.0f, 0.0f, 0.0f);
     Eigen::Vector3f baseColor(0.0f, -0.30f, -5.0f);
     Eigen::Vector3f specularColor(0.0f, -0.30f, -5.0f);
     Eigen::Vector3f interiorFactor(0.0f, -0.30f, -5.0f);
-    Eigen::Vector3f baseColor(0.0f, -0.30f, -5.0f);
-
 
     shader.bind();
 
     shader.setUniform("show_uvs", 0.0f);
     shader.setUniform("light_position", lightPosition);
-    shader.setUniform("model", model);
-    shader.setUniform("view", view);
-    shader.setUniform("proj", proj);
-
+    shader.setUniform("model", modelMatrix);
+    shader.setUniform("view", viewMatrix);
+    shader.setUniform("proj", projMatrix);
     shader.setUniform("fixed_color", fixedColor);
-
-
-  vertices = (mesh.vertices.transpose()).cast<float>();
-  vertexNormals = (mesh.vertexNormals.transpose()).cast<float>();
-
-  faces = (mesh.faces.transpose()).cast<unsigned>();
-  // faceNormals = (mesh.faceNormals.transpose()).cast<unsigned>();
-
-  vertexUvs = (mesh.vertexUvs.transpose()).cast<float>();
-  vertexAmbient = (mesh.vertexAmbient.transpose()).cast<float>();
-  vertexDiffuse = (mesh.vertexDiffuse.transpose()).cast<float>();
-  vertexSpecular = (mesh.vertexSpecular.transpose()).cast<float>();
-
 
 
     // Set transformaition parameters
@@ -221,19 +205,24 @@ void Viewer::launch() {
     computeCameraMatries();
 
     // Send transformaition parameters
+    /*
     GLint model = opengl.shaderMesh.uniform("model");
     GLint view = opengl.shaderMesh.uniform("view");
     GLint proj = opengl.shaderMesh.uniform("proj");
     glUniformMatrix4fv(model, 1, GL_FALSE, modelMatrix.data());
     glUniformMatrix4fv(view, 1, GL_FALSE, viewMatrix.data());
     glUniformMatrix4fv(proj, 1, GL_FALSE, projMatrix.data());
+    */
 
     // Set light parameters
+    /*
     float shininess = 35.0f;
     float lightOn = 1.0f;
     Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
+    */
 
     // Send light parameters
+    /*
     GLint specularExponent = opengl.shaderMesh.uniform("specular_exponent");
     GLint lightPositionWorld = opengl.shaderMesh.uniform("light_position_world");
     GLint lightingFactor = opengl.shaderMesh.uniform("lighting_factor");
@@ -245,8 +234,10 @@ void Viewer::launch() {
     glUniform3fv(lightPositionWorld, 1, revLight.data());
     glUniform1f(lightingFactor, lightOn);
     glUniform4f(fixedColor, 1.0, 1.0, 1.0, 1.0);
+    */
 
     // Send texture paramters
+    /*
     if (wireframe) {
       glEnable(GL_LINE_SMOOTH);
       glLineWidth(lineWidth);
@@ -259,6 +250,7 @@ void Viewer::launch() {
       opengl.drawMesh(true);
       glUniform1f(textureFactor, 0.0f);
     }
+    */
 
     screen->drawContents();
     screen->drawWidgets();

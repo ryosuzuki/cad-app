@@ -7,6 +7,56 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <nanogui/opengl.h>
+#include <nanogui/opengl.h>
+
+template <typename T> struct type_traits;
+template <> struct type_traits<uint32_t> { enum { type = GL_UNSIGNED_INT, integral = 1 }; };
+template <> struct type_traits<int32_t> { enum { type = GL_INT, integral = 1 }; };
+template <> struct type_traits<uint16_t> { enum { type = GL_UNSIGNED_SHORT, integral = 1 }; };
+template <> struct type_traits<int16_t> { enum { type = GL_SHORT, integral = 1 }; };
+template <> struct type_traits<uint8_t> { enum { type = GL_UNSIGNED_BYTE, integral = 1 }; };
+template <> struct type_traits<int8_t> { enum { type = GL_BYTE, integral = 1 }; };
+template <> struct type_traits<double> { enum { type = GL_DOUBLE, integral = 0 }; };
+template <> struct type_traits<float> { enum { type = GL_FLOAT, integral = 0 }; };
+// template <> struct type_traits<half_float::half> { enum { type = GL_HALF_FLOAT, integral = 0 }; };
+template <typename T> struct serialization_helper;
+
+
+class GLUniformBuffer {
+public:
+  GLUniformBuffer() : mID(0), mBindingPoint(0) { }
+
+  void init();
+  void free();
+  void bind(int index);
+  void release();
+  void update(const std::vector<uint8_t> &data);
+  int getBindingPoint() const { return mBindingPoint; }
+
+private:
+  GLuint mID;
+  int mBindingPoint;
+};
+
+class GLFramebuffer {
+public:
+  GLFramebuffer() : mFramebuffer(0), mDepth(0), mColor(0), mSamples(0) { }
+
+  void init(const Eigen::Vector2i &size, int nSamples);
+  void free();
+  void bind();
+  void release();
+  void blit();
+  bool ready() { return mFramebuffer != 0; }
+  int samples() const { return mSamples; }
+  void downloadTGA(const std::string &filename);
+
+protected:
+  GLuint mFramebuffer, mDepth, mColor;
+  Eigen::Vector2i mSize;
+  int mSamples;
+};
+
 
 class GLShader {
 
@@ -28,21 +78,26 @@ public:
   const std::string &name() const { return mName; }
 
   void define(const std::string &key, const std::string &value) { mDefinitions[key] = value; }
+
   void bind();
+
   void free();
+
   GLint attrib(const std::string &name, bool warn = true) const;
+
   GLint uniform(const std::string &name, bool warn = true) const;
+
   template <typename Matrix> void uploadAttrib(const std::string &name, const Matrix &M, int version = -1) {
     uint32_t compSize = sizeof(typename Matrix::Scalar);
-    GLuint glType = (GLuint) detail::type_traits<typename Matrix::Scalar>::type;
-    bool integral = (bool) detail::type_traits<typename Matrix::Scalar>::integral;
+    GLuint glType = (GLuint) type_traits<typename Matrix::Scalar>::type;
+    bool integral = (bool) type_traits<typename Matrix::Scalar>::integral;
 
     uploadAttrib(name, (uint32_t) M.size(), (int) M.rows(), compSize,
                  glType, integral, M.data(), version);
   }
   template <typename Matrix> void downloadAttrib(const std::string &name, Matrix &M) {
     uint32_t compSize = sizeof(typename Matrix::Scalar);
-    GLuint glType = (GLuint) detail::type_traits<typename Matrix::Scalar>::type;
+    GLuint glType = (GLuint) type_traits<typename Matrix::Scalar>::type;
 
     auto it = mBufferObjects.find(name);
     if (it == mBufferObjects.end())
@@ -93,49 +148,49 @@ public:
     glUniformMatrix4fv(uniform(name, warn), 1, GL_FALSE, mat.template cast<float>().data());
   }
 
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 1, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 1, int>::type = 0>
   void setUniform(const std::string &name, T value, bool warn = true) {
     glUniform1i(uniform(name, warn), (int) value);
   }
 
   /// Initialize a uniform parameter with a floating point value
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 0, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 0, int>::type = 0>
   void setUniform(const std::string &name, T value, bool warn = true) {
     glUniform1f(uniform(name, warn), (float) value);
   }
 
   /// Initialize a uniform parameter with a 2D vector (int)
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 1, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 1, int>::type = 0>
   void setUniform(const std::string &name, const Eigen::Matrix<T, 2, 1>  &v, bool warn = true) {
     glUniform2i(uniform(name, warn), (int) v.x(), (int) v.y());
   }
 
   /// Initialize a uniform parameter with a 2D vector (float)
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 0, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 0, int>::type = 0>
   void setUniform(const std::string &name, const Eigen::Matrix<T, 2, 1>  &v, bool warn = true) {
     glUniform2f(uniform(name, warn), (float) v.x(), (float) v.y());
   }
 
   /// Initialize a uniform parameter with a 3D vector (int)
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 1, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 1, int>::type = 0>
   void setUniform(const std::string &name, const Eigen::Matrix<T, 3, 1>  &v, bool warn = true) {
     glUniform3i(uniform(name, warn), (int) v.x(), (int) v.y(), (int) v.z());
   }
 
   /// Initialize a uniform parameter with a 3D vector (float)
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 0, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 0, int>::type = 0>
   void setUniform(const std::string &name, const Eigen::Matrix<T, 3, 1>  &v, bool warn = true) {
     glUniform3f(uniform(name, warn), (float) v.x(), (float) v.y(), (float) v.z());
   }
 
   /// Initialize a uniform parameter with a 4D vector (int)
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 1, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 1, int>::type = 0>
   void setUniform(const std::string &name, const Eigen::Matrix<T, 4, 1>  &v, bool warn = true) {
     glUniform4i(uniform(name, warn), (int) v.x(), (int) v.y(), (int) v.z(), (int) v.w());
   }
 
   /// Initialize a uniform parameter with a 4D vector (float)
-  template <typename T, typename std::enable_if<detail::type_traits<T>::integral == 0, int>::type = 0>
+  template <typename T, typename std::enable_if<type_traits<T>::integral == 0, int>::type = 0>
   void setUniform(const std::string &name, const Eigen::Matrix<T, 4, 1>  &v, bool warn = true) {
     glUniform4f(uniform(name, warn), (float) v.x(), (float) v.y(), (float) v.z(), (float) v.w());
   }
@@ -184,36 +239,3 @@ protected:
   std::map<std::string, std::string> mDefinitions;
 };
 
-//  ----------------------------------------------------
-
-/**
- * \class GLUniformBuffer glutil.h nanogui/glutil.h
- *
- * \brief Helper class for creating OpenGL Uniform Buffer objects.
- */
-class GLUniformBuffer {
-public:
-  /// Default constructor: unusable until you call the ``init()`` method
-  GLUniformBuffer() : mID(0), mBindingPoint(0) { }
-
-  /// Create a new uniform buffer
-  void init();
-
-  /// Release underlying OpenGL object
-  void free();
-
-  /// Bind the uniform buffer to a specific binding point
-  void bind(int index);
-
-  /// Release/unbind the uniform buffer
-  void release();
-
-  /// Update content on the GPU using data
-  void update(const std::vector<uint8_t> &data);
-
-  /// Return the binding point of this uniform buffer
-  int getBindingPoint() const { return mBindingPoint; }
-private:
-  GLuint mID;
-  int mBindingPoint;
-};
