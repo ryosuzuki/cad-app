@@ -5,14 +5,12 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <nanogui/nanogui.h>
-#include <igl/readOBJ.h>
-#include <igl/two_axis_valuator_fixed_up.h>
-#include <igl/quat_to_mat.h>
 #include <nanogui/glutil.h>
 
 #include "mesh.h"
 #include "opengl.h"
 #include "control.h"
+#include "loader.h"
 
 class Viewer {
 public:
@@ -25,15 +23,14 @@ public:
   void computeCameraMatries();
 
   GLFWwindow *window;
-  // nanogui::Screen *screen;
   Mesh mesh;
   OpenGL opengl;
 
-  Eigen::MatrixXd vertices;
+  Eigen::MatrixXf vertices;
   Eigen::MatrixXi faces;
-  Eigen::MatrixXd vertexUvs;
+  Eigen::MatrixXf vertexUvs;
   Eigen::MatrixXi faceUvs;
-  Eigen::MatrixXd cornerNormals;
+  Eigen::MatrixXf cornerNormals;
   Eigen::MatrixXi faceNormalIndices;
 
 };

@@ -12,7 +12,7 @@ void OpenGL::initBuffers() {
   glGenBuffers(1, &vboVertexUvs);
 
   glGenBuffers(1, &vboFaces);
-  glGenBuffers(1, &vboFaceNormals);
+  // glGenBuffers(1, &vboFaceNormals);
 
   glGenBuffers(1, &vboFaceAmbient);
   glGenBuffers(1, &vboFaceDiffuse);
@@ -33,7 +33,7 @@ void OpenGL::freeBuffers() {
   glDeleteBuffers(1, &vboVertexUvs);
 
   glDeleteBuffers(1, &vboFaces);
-  glDeleteBuffers(1, &vboFaceNormals);
+  // glDeleteBuffers(1, &vboFaceNormals);
 
   glDeleteBuffers(1, &vboFaceAmbient);
   glDeleteBuffers(1, &vboFaceDiffuse);
@@ -52,7 +52,7 @@ void OpenGL::setMesh(const Mesh &mesh) {
   vertexNormals = (mesh.vertexNormals.transpose()).cast<float>();
 
   faces = (mesh.faces.transpose()).cast<unsigned>();
-  faceNormals = (mesh.faceNormals.transpose()).cast<unsigned>();
+  // faceNormals = (mesh.faceNormals.transpose()).cast<unsigned>();
 
   vertexUvs = (mesh.vertexUvs.transpose()).cast<float>();
   vertexAmbient = (mesh.vertexAmbient.transpose()).cast<float>();
@@ -64,7 +64,7 @@ void OpenGL::bindMesh() {
   glBindVertexArray(vaoMesh);
   shaderMesh.bind();
   shaderMesh.bindVertexAttribArray("position", vboVertices, vertices, true);
-  shaderMesh.bindVertexAttribArray("normal", vboFaceNormals, vertexNormals, true);
+  shaderMesh.bindVertexAttribArray("normal", vboVertexNormals, vertexNormals, true);
   shaderMesh.bindVertexAttribArray("Ka", vboVertexAmbient, vertexAmbient, true);
   shaderMesh.bindVertexAttribArray("Kd", vboVertexDiffuse, vertexDiffuse, true);
   shaderMesh.bindVertexAttribArray("Ks", vboVertexSpecular, vertexSpecular, true);

@@ -7,25 +7,25 @@
 
 class Mesh {
 public:
-  void set(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F);
-  void setUv(const Eigen::MatrixXd &V_UV, const Eigen::MatrixXi &F_UV);
-  void computeFaceNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::MatrixXd &N);
-  void computeVertexNormals(const Eigen::MatrixXd &V, const Eigen::MatrixXi &F, Eigen::MatrixXd &N);
+  void set(const Eigen::MatrixXf &V, const Eigen::MatrixXi &F);
+  void setUv(const Eigen::MatrixXf &V_UV, const Eigen::MatrixXi &F_UV);
+  void computeFaceNormals(const Eigen::MatrixXf &V, const Eigen::MatrixXi &F, Eigen::MatrixXf &N);
+  void computeVertexNormals(const Eigen::MatrixXf &V, const Eigen::MatrixXi &F, Eigen::MatrixXf &N);
 
-  Eigen::MatrixXd vertices;
+  Eigen::MatrixXf vertices;
   Eigen::MatrixXi faces;
-  Eigen::MatrixXd faceNormals;
-  Eigen::MatrixXd vertexNormals;
-  Eigen::MatrixXd faceUvs;
+  Eigen::MatrixXf faceNormals;
+  Eigen::MatrixXf vertexNormals;
+  Eigen::MatrixXf faceUvs;
   Eigen::MatrixXi vertexUvs;
 
-  Eigen::MatrixXd faceAmbient;
-  Eigen::MatrixXd faceDiffuse;
-  Eigen::MatrixXd faceSpecular;
+  Eigen::MatrixXf faceAmbient;
+  Eigen::MatrixXf faceDiffuse;
+  Eigen::MatrixXf faceSpecular;
 
-  Eigen::MatrixXd vertexAmbient;
-  Eigen::MatrixXd vertexDiffuse;
-  Eigen::MatrixXd vertexSpecular;
+  Eigen::MatrixXf vertexAmbient;
+  Eigen::MatrixXf vertexDiffuse;
+  Eigen::MatrixXf vertexSpecular;
 
 };
 

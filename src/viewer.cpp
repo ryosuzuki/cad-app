@@ -5,6 +5,7 @@ using namespace nanogui;
 
 nanogui::Screen *screen = nullptr;
 Control control;
+Loader loader;
 
 float width = 800;
 float height = 800;
@@ -101,7 +102,11 @@ void Viewer::load() {
     return;
   }
 
-  igl::readOBJ(filename, vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
+  Eigen::MatrixXf V;
+  Eigen::MatrixXi F;
+  loader.loadObj(filename, V, F);
+  vertices = V.transpose();
+  faces = F.transpose();
   mesh.set(vertices, faces);
   // this->mesh.setUv(vertexUvs, faceUvs);
 
@@ -153,7 +158,12 @@ void Viewer::launch() {
   init();
   setCallbacks();
 
-  igl::readOBJ("../bunny.obj", vertices, vertexUvs, cornerNormals, faces, faceUvs, faceNormalIndices);
+  std::string filename = "../bunny.obj";
+  Eigen::MatrixXf V;
+  Eigen::MatrixXi F;
+  loader.loadObj(filename, V, F);
+  vertices = V.transpose();
+  faces = F.transpose();
   mesh.set(vertices, faces);
 
   opengl.init();
