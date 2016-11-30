@@ -8,7 +8,7 @@
 #include <nanogui/glutil.h>
 
 #include "mesh.h"
-#include "opengl.h"
+#include "shader.h"
 #include "control.h"
 #include "loader.h"
 
@@ -24,7 +24,7 @@ public:
 
   GLFWwindow *window;
   Mesh mesh;
-  OpenGL opengl;
+  GLShader shader;
 
   Eigen::MatrixXf vertices;
   Eigen::MatrixXi faces;

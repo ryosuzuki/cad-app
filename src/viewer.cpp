@@ -166,7 +166,8 @@ void Viewer::launch() {
   faces = F.transpose();
   mesh.set(vertices, faces);
 
-  opengl.init();
+  // opengl.init();
+  shader.init("mesh_shader", (const char *)shader_mesh_vert, (const char *)shader_mesh_frag);
 
   while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
 
@@ -182,6 +183,38 @@ void Viewer::launch() {
 
     opengl.setMesh(mesh);
     opengl.bindMesh();
+
+    Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
+    Eigen::Vector3f fixedColor(0.0f, 0.0f, 0.0f, 0.0f);
+    Eigen::Vector3f baseColor(0.0f, -0.30f, -5.0f);
+    Eigen::Vector3f specularColor(0.0f, -0.30f, -5.0f);
+    Eigen::Vector3f interiorFactor(0.0f, -0.30f, -5.0f);
+    Eigen::Vector3f baseColor(0.0f, -0.30f, -5.0f);
+
+
+    shader.bind();
+
+    shader.setUniform("show_uvs", 0.0f);
+    shader.setUniform("light_position", lightPosition);
+    shader.setUniform("model", model);
+    shader.setUniform("view", view);
+    shader.setUniform("proj", proj);
+
+    shader.setUniform("fixed_color", fixedColor);
+
+
+  vertices = (mesh.vertices.transpose()).cast<float>();
+  vertexNormals = (mesh.vertexNormals.transpose()).cast<float>();
+
+  faces = (mesh.faces.transpose()).cast<unsigned>();
+  // faceNormals = (mesh.faceNormals.transpose()).cast<unsigned>();
+
+  vertexUvs = (mesh.vertexUvs.transpose()).cast<float>();
+  vertexAmbient = (mesh.vertexAmbient.transpose()).cast<float>();
+  vertexDiffuse = (mesh.vertexDiffuse.transpose()).cast<float>();
+  vertexSpecular = (mesh.vertexSpecular.transpose()).cast<float>();
+
+
 
     // Set transformaition parameters
 

@@ -1,111 +1,400 @@
 
-
 #include "shader.h"
 
-bool Shader::init(const std::string &vertexShaderString,
-  const std::string &fragmentShaderString,
-  const std::string &fragmentDataName,
-  const std::string &geometryShaderString,
-  int geometryShaderMaxVertices)
-{
-  using namespace std;
-  vertexShader = createShaderHelper(GL_VERTEX_SHADER, vertexShaderString);
-  geometryShader = createShaderHelper(GL_GEOMETRY_SHADER, geometryShaderString);
-  fragmentShader = createShaderHelper(GL_FRAGMENT_SHADER, fragmentShaderString);
+bool GLShader::initFromFiles(const std::string &name, const std::string &vertex_fname, const std::string &fragment_fname, const std::string &geometry_fname) {
+  auto file_to_string = [](const std::string & filename) -> std::string {
+    if (filename.empty()) {
+      return "";
+    }
+    std::ifstream t(filename);
+    return std::string((std::istreambuf_iterator<char>(t)),
+    std::istreambuf_iterator<char>());
+  };
 
-  if (!vertexShader || !fragmentShader) {
+  return init(name, file_to_string(vertex_fname), file_to_string(fragment_fname), file_to_string(geometry_fname));
+}
+
+bool GLShader::init(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str) {
+  std::string defines;
+  for (auto def : mDefinitions) {
+    defines += std::string("#define ") + def.first + std::string(" ") + def.second + "\n";
+  }
+
+  glGenVertexArrays(1, &mVertexArrayObject);
+  mName = name;
+  mVertexShader =
+    createShader_helper(GL_VERTEX_SHADER, name, defines, vertex_str);
+  mGeometryShader =
+    createShader_helper(GL_GEOMETRY_SHADER, name, defines, geometry_str);
+  mFragmentShader =
+    createShader_helper(GL_FRAGMENT_SHADER, name, defines, fragment_str);
+
+  if (!mVertexShader || !mFragmentShader) {
+    return false;
+  }
+  if (!geometry_str.empty() && !mGeometryShader) {
     return false;
   }
 
-  programShader = glCreateProgram();
+  mProgramShader = glCreateProgram();
 
-  glAttachShader(programShader, vertexShader);
-  glAttachShader(programShader, fragmentShader);
+  glAttachShader(mProgramShader, mVertexShader);
+  glAttachShader(mProgramShader, mFragmentShader);
 
-  if (geometryShader) {
-    glAttachShader(programShader, geometryShader);
-
-    /* This covers only basic cases and may need to be modified */
-    glProgramParameteri(programShader, GL_GEOMETRY_INPUT_TYPE, GL_TRIANGLES);
-    glProgramParameteri(programShader, GL_GEOMETRY_OUTPUT_TYPE, GL_TRIANGLES);
-    glProgramParameteri(programShader, GL_GEOMETRY_VERTICES_OUT, geometryShaderMaxVertices);
+  if (mGeometryShader) {
+    glAttachShader(mProgramShader, mGeometryShader);
   }
 
-  glBindFragDataLocation(programShader, 0, fragmentDataName.c_str());
-  glLinkProgram(programShader);
+  glLinkProgram(mProgramShader);
 
   GLint status;
-  glGetProgramiv(programShader, GL_LINK_STATUS, &status);
+  glGetProgramiv(mProgramShader, GL_LINK_STATUS, &status);
 
   if (status != GL_TRUE) {
     char buffer[512];
-    glGetProgramInfoLog(programShader, 512, NULL, buffer);
-    std::cerr << "Linker error: " << std::endl << buffer << std::endl;
-    programShader = 0;
-    return false;
+    glGetProgramInfoLog(mProgramShader, 512, nullptr, buffer);
+    std::cerr << "Linker error (" << mName << "): " << std::endl << buffer << std::endl;
+    mProgramShader = 0;
+    throw std::runtime_error("Shader linking failed!");
   }
 
   return true;
 }
 
-void Shader::bind() {
-  glUseProgram(programShader);
+void GLShader::bind() {
+  glUseProgram(mProgramShader);
+  glBindVertexArray(mVertexArrayObject);
 }
 
-GLint Shader::attrib(const std::string &name) const {
-  return glGetAttribLocation(programShader, name.c_str());
-}
-
-GLint Shader::uniform(const std::string &name) const {
-  return glGetUniformLocation(programShader, name.c_str());
-}
-
-GLint Shader::bindVertexAttribArray(const std::string &name, GLuint bufferID, const Eigen::MatrixXf &M, bool refresh) const {
-  GLint id = attrib(name);
-  if (id < 0) {
-    return id;
+GLint GLShader::attrib(const std::string &name, bool warn) const {
+  GLint id = glGetAttribLocation(mProgramShader, name.c_str());
+  if (id == -1 && warn) {
+    std::cerr << mName << ": warning: did not find attrib " << name << std::endl;
   }
-  if (M.size() == 0) {
-    glDisableVertexAttribArray(id);
-    return id;
-  }
-  glBindBuffer(GL_ARRAY_BUFFER, bufferID);
-  if (refresh) {
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*M.size(), M.data(), GL_DYNAMIC_DRAW);
-  }
-  glVertexAttribPointer(id, M.rows(), GL_FLOAT, GL_FALSE, 0, 0);
-  glEnableVertexAttribArray(id);
   return id;
 }
 
-void Shader::free() {
-  if (programShader) {
-    glDeleteProgram(programShader);
-    programShader = 0;
+void GLShader::setUniform(const std::string &name, const GLUniformBuffer &buf, bool warn) {
+  GLuint blockIndex = glGetUniformBlockIndex(mProgramShader, name.c_str());
+  if (blockIndex == GL_INVALID_INDEX) {
+    if (warn) {
+      std::cerr << mName << ": warning: did not find uniform buffer " << name << std::endl;
+    }
+    return;
   }
-  if (vertexShader) {
-    glDeleteShader(vertexShader);
-    vertexShader = 0;
+  glUniformBlockBinding(mProgramShader, blockIndex, buf.getBindingPoint());
+}
+
+GLint GLShader::uniform(const std::string &name, bool warn) const {
+  GLint id = glGetUniformLocation(mProgramShader, name.c_str());
+  if (id == -1 && warn) {
+    std::cerr << mName << ": warning: did not find uniform " << name << std::endl;
   }
-  if (fragmentShader) {
-    glDeleteShader(fragmentShader);
-    fragmentShader = 0;
+  return id;
+}
+
+void GLShader::uploadAttrib(const std::string &name, size_t size, int dim, uint32_t compSize, GLuint glType, bool integral, const void *data, int version) {
+  int attribID = 0;
+  if (name != "indices") {
+    attribID = attrib(name);
+    if (attribID < 0)
+      return;
   }
-  if (geometryShader) {
-    glDeleteShader(geometryShader);
-    geometryShader = 0;
+
+  GLuint bufferID;
+  auto it = mBufferObjects.find(name);
+  if (it != mBufferObjects.end()) {
+    Buffer &buffer = it->second;
+    bufferID = it->second.id;
+    buffer.version = version;
+    buffer.size = size;
+    buffer.compSize = compSize;
+  } else {
+    glGenBuffers(1, &bufferID);
+    Buffer buffer;
+    buffer.id = bufferID;
+    buffer.glType = glType;
+    buffer.dim = dim;
+    buffer.compSize = compSize;
+    buffer.size = size;
+    buffer.version = version;
+    mBufferObjects[name] = buffer;
+  }
+  size_t totalSize = size * (size_t) compSize;
+
+  if (name == "indices") {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, totalSize, data, GL_DYNAMIC_DRAW);
+  } else {
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, totalSize, data, GL_DYNAMIC_DRAW);
+    if (size == 0) {
+      glDisableVertexAttribArray(attribID);
+    } else {
+      glEnableVertexAttribArray(attribID);
+      glVertexAttribPointer(attribID, dim, glType, integral, 0, 0);
+    }
   }
 }
 
-GLuint Shader::createShaderHelper(GLint type, const std::string &shaderString) {
-  using namespace std;
-  if (shaderString.empty()) {
+void GLShader::downloadAttrib(const std::string &name, size_t size, int /* dim */, uint32_t compSize, GLuint /* glType */, void *data) {
+  auto it = mBufferObjects.find(name);
+  if (it == mBufferObjects.end())
+    throw std::runtime_error("downloadAttrib(" + mName + ", " + name + ") : buffer not found!");
+
+  const Buffer &buf = it->second;
+  if (buf.size != size || buf.compSize != compSize)
+    throw std::runtime_error(mName + ": downloadAttrib: size mismatch!");
+
+  size_t totalSize = size * (size_t) compSize;
+
+  if (name == "indices") {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf.id);
+    glGetBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, totalSize, data);
+  } else {
+    glBindBuffer(GL_ARRAY_BUFFER, buf.id);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, totalSize, data);
+  }
+}
+
+void GLShader::shareAttrib(const GLShader &otherShader, const std::string &name, const std::string &_as) {
+  std::string as = _as.length() == 0 ? name : _as;
+  auto it = otherShader.mBufferObjects.find(name);
+  if (it == otherShader.mBufferObjects.end())
+    throw std::runtime_error("shareAttribute(" + otherShader.mName + ", " + name + "): attribute not found!");
+  const Buffer &buffer = it->second;
+
+  if (name != "indices") {
+    int attribID = attrib(as);
+    if (attribID < 0)
+      return;
+    glEnableVertexAttribArray(attribID);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer.id);
+    glVertexAttribPointer(attribID, buffer.dim, buffer.glType, buffer.compSize == 1 ? GL_TRUE : GL_FALSE, 0, 0);
+  } else {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id);
+  }
+}
+
+void GLShader::invalidateAttribs() {
+  for (auto &buffer : mBufferObjects)
+    buffer.second.version = -1;
+}
+
+void GLShader::freeAttrib(const std::string &name) {
+  auto it = mBufferObjects.find(name);
+  if (it != mBufferObjects.end()) {
+    glDeleteBuffers(1, &it->second.id);
+    mBufferObjects.erase(it);
+  }
+}
+
+void GLShader::drawIndexed(int type, uint32_t offset_, uint32_t count_) {
+  if (count_ == 0)
+    return;
+  size_t offset = offset_;
+  size_t count = count_;
+
+  switch (type) {
+  case GL_TRIANGLES: offset *= 3; count *= 3; break;
+  case GL_LINES: offset *= 2; count *= 2; break;
+  }
+
+  glDrawElements(type, (GLsizei) count, GL_UNSIGNED_INT,
+                 (const void *)(offset * sizeof(uint32_t)));
+}
+
+void GLShader::drawArray(int type, uint32_t offset, uint32_t count) {
+  if (count == 0)
+    return;
+
+  glDrawArrays(type, offset, count);
+}
+
+void GLShader::free() {
+  for (auto &buf : mBufferObjects)
+    glDeleteBuffers(1, &buf.second.id);
+  mBufferObjects.clear();
+
+  if (mVertexArrayObject) {
+    glDeleteVertexArrays(1, &mVertexArrayObject);
+    mVertexArrayObject = 0;
+  }
+
+  glDeleteProgram(mProgramShader); mProgramShader = 0;
+  glDeleteShader(mVertexShader);   mVertexShader = 0;
+  glDeleteShader(mFragmentShader); mFragmentShader = 0;
+  glDeleteShader(mGeometryShader); mGeometryShader = 0;
+}
+
+//  ----------------------------------------------------
+
+void GLUniformBuffer::init() {
+  glGenBuffers(1, &mID);
+}
+
+void GLUniformBuffer::bind(int bindingPoint) {
+  mBindingPoint = bindingPoint;
+  glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, mID);
+}
+
+void GLUniformBuffer::release() {
+  glBindBufferBase(GL_UNIFORM_BUFFER, mBindingPoint, 0);
+}
+
+void GLUniformBuffer::free() {
+  glDeleteBuffers(1, &mID);
+  mID = 0;
+}
+
+void GLUniformBuffer::update(const std::vector<uint8_t> &data) {
+  glBindBuffer(GL_UNIFORM_BUFFER, mID);
+  glBufferData(GL_UNIFORM_BUFFER, data.size(), data.data(), GL_DYNAMIC_DRAW);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+//  ----------------------------------------------------
+
+void GLFramebuffer::init(const Vector2i &size, int nSamples) {
+  mSize = size;
+  mSamples = nSamples;
+
+  glGenRenderbuffers(1, &mColor);
+  glBindRenderbuffer(GL_RENDERBUFFER, mColor);
+
+  if (nSamples <= 1) {
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, size.x(), size.y());
+  } else {
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, nSamples, GL_RGBA8, size.x(), size.y());
+  }
+
+  glGenRenderbuffers(1, &mDepth);
+  glBindRenderbuffer(GL_RENDERBUFFER, mDepth);
+
+  if (nSamples <= 1) {
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size.x(), size.y());
+  } else {
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, nSamples, GL_DEPTH24_STENCIL8, size.x(), size.y());
+  }
+
+  glGenFramebuffers(1, &mFramebuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
+
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, mColor);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mDepth);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mDepth);
+
+  glDrawBuffer(GL_COLOR_ATTACHMENT0);
+  glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+  GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  if (status != GL_FRAMEBUFFER_COMPLETE)
+    throw std::runtime_error("Could not create framebuffer object!");
+
+  release();
+}
+
+void GLFramebuffer::free() {
+  glDeleteRenderbuffers(1, &mColor);
+  glDeleteRenderbuffers(1, &mDepth);
+  mColor = mDepth = 0;
+}
+
+void GLFramebuffer::bind() {
+  glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
+  if (mSamples > 1)
+    glEnable(GL_MULTISAMPLE);
+}
+
+void GLFramebuffer::release() {
+  if (mSamples > 1)
+    glDisable(GL_MULTISAMPLE);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void GLFramebuffer::blit() {
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, mFramebuffer);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glDrawBuffer(GL_BACK);
+
+  glBlitFramebuffer(0, 0, mSize.x(), mSize.y(), 0, 0, mSize.x(), mSize.y(),
+                    GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void GLFramebuffer::downloadTGA(const std::string &filename) {
+  uint8_t *temp = new uint8_t[mSize.prod() * 4];
+
+  std::cout << "Writing \"" << filename  << "\" (" << mSize.x() << "x" << mSize.y() << ") .. ";
+  std::cout.flush();
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, mFramebuffer);
+  glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+  glReadPixels(0, 0, mSize.x(), mSize.y(), GL_BGRA, GL_UNSIGNED_BYTE, temp);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+  uint32_t rowSize = mSize.x() * 4;
+  uint32_t halfHeight = mSize.y() / 2;
+  uint8_t *line = (uint8_t *) alloca(rowSize);
+  for (uint32_t i = 0, j = mSize.y() - 1; i < halfHeight; ++i) {
+    memcpy(line, temp + i * rowSize, rowSize);
+    memcpy(temp + i * rowSize, temp + j * rowSize, rowSize);
+    memcpy(temp + j * rowSize, line, rowSize);
+    j--;
+  }
+
+  FILE *tga = fopen(filename.c_str(), "wb");
+  if (tga == nullptr)
+    throw std::runtime_error("GLFramebuffer::downloadTGA(): Could not open output file");
+  fputc(0, tga); /* ID */
+  fputc(0, tga); /* Color map */
+  fputc(2, tga); /* Image type */
+  fputc(0, tga); fputc(0, tga); /* First entry of color map (unused) */
+  fputc(0, tga); fputc(0, tga); /* Length of color map (unused) */
+  fputc(0, tga); /* Color map entry size (unused) */
+  fputc(0, tga); fputc(0, tga);  /* X offset */
+  fputc(0, tga); fputc(0, tga);  /* Y offset */
+  fputc(mSize.x() % 256, tga); /* Width */
+  fputc(mSize.x() / 256, tga); /* continued */
+  fputc(mSize.y() % 256, tga); /* Height */
+  fputc(mSize.y() / 256, tga); /* continued */
+  fputc(32, tga);   /* Bits per pixel */
+  fputc(0x20, tga); /* Scan from top left */
+  fwrite(temp, mSize.prod() * 4, 1, tga);
+  fclose(tga);
+
+  delete[] temp;
+  std::cout << "done." << std::endl;
+}
+
+
+static GLuint createShader_helper(GLint type, const std::string &name, const std::string &defines, std::string shader_string) {
+  if (shader_string.empty()) {
     return (GLuint) 0;
   }
 
+  if (!defines.empty()) {
+    if (shader_string.length() > 8 && shader_string.substr(0, 8) == "#version") {
+      std::istringstream iss(shader_string);
+      std::ostringstream oss;
+      std::string line;
+      std::getline(iss, line);
+      oss << line << std::endl;
+      oss << defines;
+      while (std::getline(iss, line)) {
+        oss << line << std::endl;
+      }
+      shader_string = oss.str();
+    }
+    else {
+      shader_string = defines + shader_string;
+    }
+  }
+
   GLuint id = glCreateShader(type);
-  const char *shaderStringConst = shaderString.c_str();
-  glShaderSource(id, 1, &shaderStringConst, NULL);
+  const char *shader_string_const = shader_string.c_str();
+  glShaderSource(id, 1, &shader_string_const, nullptr);
   glCompileShader(id);
 
   GLint status;
@@ -113,17 +402,24 @@ GLuint Shader::createShaderHelper(GLint type, const std::string &shaderString) {
 
   if (status != GL_TRUE) {
     char buffer[512];
-    if (type == GL_VERTEX_SHADER)
-      std::cerr << "Vertex shader:" << std::endl;
-    else if (type == GL_FRAGMENT_SHADER)
-      std::cerr << "Fragment shader:" << std::endl;
-    else if (type == GL_GEOMETRY_SHADER)
-      std::cerr << "Geometry shader:" << std::endl;
-    std::cerr << shaderString <<std::endl << std::endl;
-    glGetShaderInfoLog(id, 512, NULL, buffer);
+    std::cerr << "Error while compiling ";
+
+    if (type == GL_VERTEX_SHADER) {
+      std::cerr << "vertex shader";
+    }
+    else if (type == GL_FRAGMENT_SHADER) {
+      std::cerr << "fragment shader";
+    }
+    else if (type == GL_GEOMETRY_SHADER) {
+      std::cerr << "geometry shader";
+    }
+    std::cerr << " \"" << name << "\":" << std::endl;
+    std::cerr << shader_string << std::endl << std::endl;
+    glGetShaderInfoLog(id, 512, nullptr, buffer);
     std::cerr << "Error: " << std::endl << buffer << std::endl;
-    return (GLuint) 0;
+    throw std::runtime_error("Shader compilation failed!");
   }
 
   return id;
 }
+

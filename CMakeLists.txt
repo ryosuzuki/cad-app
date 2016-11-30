@@ -42,7 +42,6 @@ add_executable(cad-app
   src/main.cpp
   src/viewer.h src/viewer.cpp
   src/mesh.h src/mesh.cpp
-  src/opengl.h src/opengl.cpp
   src/shader.h src/shader.cpp
   src/control.h src/control.cpp
   src/loader.h src/loader.cpp
