@@ -158,6 +158,13 @@ void Viewer::launch() {
   init();
   setCallbacks();
 
+  // opengl.init();
+  std::string vertFile = "../src/shader_mesh.vert";
+  std::string fragFile = "../src/shader_mesh.frag";
+  std::string geomFile = "../src/shader_mesh.geom";
+  shader.initFromFiles("shader_mesh", vertFile, fragFile, geomFile);
+
+
   std::string filename = "../bunny.obj";
   Eigen::MatrixXf V;
   Eigen::MatrixXi F;
@@ -165,12 +172,6 @@ void Viewer::launch() {
   vertices = V.transpose();
   faces = F.transpose();
   mesh.set(vertices, faces);
-
-  // opengl.init();
-  std::string vertFile = "../src/shader_mesh.vert";
-  std::string fragFile = "../src/shader_mesh.frag";
-  std::string geomFile = "../src/shader_mesh.geom";
-  shader.initFromFiles("shader_mesh", vertFile, fragFile, geomFile);
 
   while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
 
@@ -188,23 +189,30 @@ void Viewer::launch() {
     // opengl.bindMesh();
 
     Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
-    Eigen::Vector3f fixedColor(0.0f, 0.0f, 0.0f);
+    Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
+    Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
     Eigen::Vector3f baseColor(0.0f, -0.30f, -5.0f);
     Eigen::Vector3f specularColor(0.0f, -0.30f, -5.0f);
-    Eigen::Vector3f interiorFactor(0.0f, -0.30f, -5.0f);
 
     shader.bind();
 
-    shader.setUniform("show_uvs", 0.0f);
-    shader.setUniform("light_position", lightPosition);
+    // vertex shader
+    shader.uploadAttrib("position", mesh.vertices);
+    shader.uploadAttrib("normal", mesh.vertexNormals);
+
+    // geometry shader
     shader.setUniform("model", modelMatrix);
     shader.setUniform("view", viewMatrix);
     shader.setUniform("proj", projMatrix);
-    shader.setUniform("fixed_color", fixedColor);
+    shader.setUniform("light_position", lightPosition);
+    shader.setUniform("camera_local", cameraLocal);
 
+    // fragment shader
+    shader.setUniform("show_uvs", 0.0f);
+    shader.setUniform("base_color", baseColor);
+    shader.setUniform("specular_color", specularColor);
 
     // Set transformaition parameters
-
     computeCameraMatries();
 
     // Send transformaition parameters

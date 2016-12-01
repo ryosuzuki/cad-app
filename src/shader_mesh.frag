@@ -2,11 +2,9 @@
 precision lowp float;
 
 uniform float show_uvs;
-uniform vec4 fixed_color;
-uniform vec3 specular_color;
 uniform vec3 base_color;
-uniform vec3 edge_factor;
-uniform vec3 interior_factor;
+uniform vec3 specular_color;
+uniform vec4 fixed_color;
 
 in fData {
   vec3 to_eye;
@@ -23,6 +21,7 @@ void main() {
     outColor = fixed_color;
     return;
   }
+
   vec3 Kd = base_color;
   vec3 Ks = specular_color;
   vec3 Ka = Kd * 0.2;
@@ -39,20 +38,7 @@ void main() {
     frag.color.rgb * frag.color.a;
 
   if (show_uvs == 1.0) {
-    const float inv_sqrt3 = 0.577350269189626;
-    vec3 tx = vec3(
-      frag.texcoord.x + inv_sqrt3 * frag.texcoord.y,
-      frag.texcoord.x - inv_sqrt3 * frag.texcoord.y,
-      2.0*inv_sqrt3 * frag.texcoord.y
-    );
-
-    bool a = abs(fract(tx.x + 0.5) - 0.5) < 0.1;
-    bool b = abs(fract(tx.y + 0.5) - 0.5) < 0.1;
-    bool c = abs(fract(tx.z + 0.5) - 0.5) < 0.1;
-    if (a || b || c)
-      finalColor *= edge_factor;
-    else
-      finalColor *= interior_factor;
+    // add uv mapping with texcoord
   }
 
   outColor = vec4(finalColor, 1.0);

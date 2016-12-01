@@ -2,24 +2,18 @@
 
 in vec3 position;
 in vec3 normal;
-in vec3 normal_data;
-in vec3 tangent;
-in vec3 uv;
+in vec2 texcoord;
 in vec4 color;
 
 out vData {
   vec3 normal;
-  vec3 normal_data;
-  vec3 tangent;
-  vec3 uv;
+  vec2 texcoord;
   vec4 color;
 } vertex;
 
 void main() {
   gl_Position = vec4(position, 1.0);
   vertex.normal = normal;
-  vertex.normal_data = normal_data;
-  vertex.tangent = normalize(tangent);
-  vertex.uv = uv;
+  vertex.texcoord = texcoord;
   vertex.color = color;
 }

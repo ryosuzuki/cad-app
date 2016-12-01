@@ -65,8 +65,6 @@ bool GLShader::initFromFiles(const std::string &name, const std::string &vertex_
     std::istreambuf_iterator<char>());
   };
 
-  std::cout << file_to_string(fragment_fname) << std::endl;
-
   return init(name, file_to_string(vertex_fname), file_to_string(fragment_fname), file_to_string(geometry_fname));
 }
 
