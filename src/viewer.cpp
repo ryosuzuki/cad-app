@@ -224,7 +224,6 @@ void Viewer::launch() {
     shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
 
 
-
     glfwPostEmptyEvent();
 
     // Send texture paramters

@@ -9,7 +9,7 @@ void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
 }
 
 void Mesh::computeNormals() {
-  std::cout << "Computing vertex normals .. ";
+  std::cout << "Computing face and vertex normals .. ";
 
   Nf.resize(3, F.cols());
   Nf.setZero();
