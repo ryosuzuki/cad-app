@@ -1,8 +1,6 @@
 
 #include "viewer.h"
 
-using namespace nanogui;
-
 nanogui::Screen *screen = nullptr;
 Control control;
 Loader loader;
@@ -75,21 +73,18 @@ void Viewer::init() {
   int windowWidth, windowHeight;
   glfwGetWindowSize(window, &windowWidth, &windowHeight);
 
-  screen = new Screen();
+  screen = new nanogui::Screen();
   screen->initialize(window, true);
 
-  FormHelper *gui = new FormHelper(screen);
-  nanogui::ref<Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Main Menu");
+  nanogui::FormHelper *gui = new nanogui::FormHelper(screen);
+  nanogui::ref<nanogui::Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Main Menu");
   gui->addGroup("Workspace");
   gui->addButton("Load", [&]() { this->load(); });
   // gui->addButton("Save", [&]() { this->save(); });
   gui->addVariable("Wireframe", wireframe);
 
-
   screen->setVisible(true);
   screen->performLayout();
-
-
 }
 
 void Viewer::load() {
@@ -158,15 +153,16 @@ void Viewer::launch() {
   init();
   setCallbacks();
 
+  std::cout << "Compiling shaders .. ";
+  std::cout.flush();
   shaderMesh.initFromFiles("shader_mesh",
     "../src/shader_mesh.vert",
     "../src/shader_mesh.frag",
     "../src/shader_mesh.geom");
-
   shaderWireframe.initFromFiles("shader_wireframe",
     "../src/shader_wireframe.vert",
-    "../src/shader_wireframe.frag",
-    "../src/shader_wireframe.geom");
+    "../src/shader_wireframe.frag");
+  std::cout << "done." << std::endl;
 
   std::string filename = "../bunny.obj";
   Eigen::MatrixXf V;
@@ -189,25 +185,19 @@ void Viewer::launch() {
     // Set transformaition parameters
     computeCameraMatries();
 
-
-    // opengl.setMesh(mesh);
-    // opengl.bindMesh();
-
     Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
     Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
     Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
     Eigen::Vector3f baseColor(1.0f, 0.0f, 1.0f);
     Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 
+
     shaderMesh.bind();
 
     // vertex shader
-    shaderMesh.uploadAttrib("position", mesh.vertices);
     shaderMesh.uploadIndices(mesh.faces);
-    // mesh.vertexNormals = Eigen::Matrix4f
-
-    // shaderMesh.uploadAttrib("normal", mesh.faceNormals);
-    // std::cout << V << std::endl;
+    shaderMesh.uploadAttrib("position", mesh.vertices);
+    shaderMesh.uploadAttrib("normal", mesh.faceNormals);
 
     // geometry shader
     shaderMesh.setUniform("model", modelMatrix);
@@ -221,9 +211,23 @@ void Viewer::launch() {
     shaderMesh.setUniform("base_color", baseColor);
     shaderMesh.setUniform("specular_color", specularColor);
 
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1.0, 1.0);
+    shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.faces.cols());
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+
+    glEnable(GL_LINE_SMOOTH);
+    shaderWireframe.bind();
     shaderWireframe.uploadAttrib("position", mesh.vertices);
     shaderWireframe.setUniform("color", baseColor);
     shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
+    shaderWireframe.drawIndexed(GL_LINES, 0, mesh.faces.cols());
+
+
+
+    glfwPostEmptyEvent();
 
     // Send texture paramters
     /*
@@ -241,7 +245,6 @@ void Viewer::launch() {
     }
     */
 
-
     screen->drawContents();
     screen->drawWidgets();
 
@@ -250,6 +253,51 @@ void Viewer::launch() {
 
   glfwTerminate();
 }
+
+void Viewer::debug() {
+  GLShader mShader;
+  mShader.init(
+    "a_simple_shader",
+
+    "#version 330\n"
+    "uniform mat4 modelViewProj;\n"
+    "in vec3 position;\n"
+    "void main() {\n"
+    "  gl_Position = modelViewProj * vec4(position, 1.0);\n"
+    "}",
+
+    "#version 330\n"
+    "out vec4 color;\n"
+    "uniform float intensity;\n"
+    "void main() {\n"
+    "  color = vec4(vec3(intensity), 1.0);\n"
+    "}"
+  );
+
+  Eigen::MatrixXi indices(3, 2);
+  indices.col(0) << 0, 1, 2;
+  indices.col(1) << 2, 3, 0;
+
+  Eigen::MatrixXf positions(3, 4);
+  positions.col(0) << -1, -1, 0;
+  positions.col(1) <<  1, -1, 0;
+  positions.col(2) <<  1,  1, 0;
+  positions.col(3) << -1,  1, 0;
+
+  mShader.bind();
+  mShader.uploadIndices(indices);
+  mShader.uploadAttrib("position", positions);
+  mShader.setUniform("intensity", 0.5f);
+
+  Eigen::Matrix4f mvp;
+  mvp.setIdentity();
+  mvp.topLeftCorner<3,3>() = Eigen::Matrix3f(Eigen::AngleAxisf((float) glfwGetTime(), Eigen::Vector3f::UnitZ())) * 0.25f;
+  mvp.row(0) *= (float) width / (float) height;
+  mShader.setUniform("modelViewProj", mvp);
+  mShader.drawIndexed(GL_TRIANGLES, 0, 2);
+
+}
+
 
 
 void Viewer::setCallbacks() {

@@ -5,7 +5,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <nanogui/nanogui.h>
-#include <nanogui/glutil.h>
+#include <nanogui/opengl.h>
 
 #include "mesh.h"
 #include "shader.h"
@@ -19,6 +19,7 @@ public:
 
   void load();
   void save();
+  void debug();
   void setCallbacks();
   void computeCameraMatries();
 
