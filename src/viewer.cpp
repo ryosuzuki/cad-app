@@ -172,7 +172,7 @@ void Viewer::launch() {
 
     glfwPollEvents();
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     float ratio;
     int frameWidth, frameHeight;
@@ -183,12 +183,16 @@ void Viewer::launch() {
     // Set transformaition parameters
     computeCameraMatries();
 
+
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_DEPTH_TEST);
+    glLineWidth(1.0f);
+
     Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
     Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
     Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
     Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
     Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
-
 
     shaderMesh.bind();
 
