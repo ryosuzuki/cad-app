@@ -32,6 +32,14 @@ Eigen::Vector3f modelTranslation(0, 0, 0);
 Eigen::Vector4f viewport(0, 0, 800, 800);
 
 
+
+Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
+Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
+Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
+Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
+Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
+
+
 float currentMouseX;
 float currentMouseY;
 float mouseDownX;
@@ -60,9 +68,6 @@ void Viewer::init() {
   glfwWindowHint(GLFW_DEPTH_BITS, 24);
   glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-  // glEnable(GL_DEPTH_TEST);
-  // glEnable(GL_LIGHTING);
-
   window = glfwCreateWindow(width, height, "CAD app", nullptr, nullptr);
   glfwMakeContextCurrent(window);
 
@@ -79,35 +84,109 @@ void Viewer::init() {
   nanogui::FormHelper *gui = new nanogui::FormHelper(screen);
   nanogui::ref<nanogui::Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Main Menu");
   gui->addGroup("Workspace");
-  gui->addButton("Load", [&]() { this->load(); });
+  gui->addButton("Load", [&]() { load(); });
   // gui->addButton("Save", [&]() { this->save(); });
   gui->addVariable("Wireframe", wireframe);
 
   screen->setVisible(true);
   screen->performLayout();
+
 }
 
-void Viewer::load() {
-  std::string filename = nanogui::file_dialog({
-    {"obj", "Wavefront OBJ"}
-    }, false);
-  std::cout << filename << std::endl;
+void Viewer::initShaders() {
+  std::cout << "Compiling shaders .. ";
+  std::cout.flush();
+  shaderMesh.initFromFiles("shader_mesh",
+    "../src/shader_mesh.vert",
+    "../src/shader_mesh.frag",
+    "../src/shader_mesh.geom");
+  shaderWireframe.initFromFiles("shader_wireframe",
+    "../src/shader_wireframe.vert",
+    "../src/shader_wireframe.frag");
+  std::cout << "done." << std::endl;
+}
+
+void Viewer::load(std::string filename) {
+  std::cout << "Loading OBJ file .. " << std::endl;
 
   if (filename.empty()) {
-    return;
+    filename = nanogui::file_dialog({
+      {"obj", "Wavefront OBJ"}
+      }, false);
   }
 
   Eigen::MatrixXf V;
   Eigen::MatrixXi F;
   loader.loadObj(filename, V, F);
   mesh.set(V, F);
-  // this->mesh.setUv(vertexUvs, faceUvs);
+
+  // shaderWireframe.bind();
+  // shaderWireframe.uploadAttrib("position", mesh.V);
+
+  std::cout << filename << std::endl;
+  std::cout << "done." << std::endl;
 
   // core.align_camera_center(data.V,data.F);
 }
 
+void Viewer::showMesh() {
+  shaderMesh.bind();
+  shaderMesh.uploadIndices(mesh.F);
+  shaderMesh.uploadAttrib("position", mesh.V);
+  shaderMesh.uploadAttrib("normal", mesh.N);
+  shaderMesh.setUniform("model", modelMatrix);
+  shaderMesh.setUniform("view", viewMatrix);
+  shaderMesh.setUniform("proj", projMatrix);
+  shaderMesh.setUniform("light_position", lightPosition);
+  shaderMesh.setUniform("camera_local", cameraLocal);
+  shaderMesh.setUniform("show_uvs", 0.0f);
+  shaderMesh.setUniform("base_color", baseColor);
+  shaderMesh.setUniform("specular_color", specularColor);
+
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_POLYGON_OFFSET_FILL);
+  glPolygonOffset(1.0, 1.0);
+  shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
+  glDisable(GL_POLYGON_OFFSET_FILL);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
 void Viewer::save() {
   std::cout << "save" << std::endl;
+}
+
+
+void Viewer::launch() {
+  init();
+  initShaders();
+  initCallbacks();
+
+  load("../teapot.obj");
+
+  while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
+
+    glfwPollEvents();
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    float ratio;
+    int frameWidth, frameHeight;
+    glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
+    ratio = frameWidth / (float)frameHeight;
+    glViewport(0, 0, frameWidth, frameHeight);
+
+    computeCameraMatries();
+    showMesh();
+    glfwPostEmptyEvent();
+
+    screen->drawContents();
+    screen->drawWidgets();
+
+    glfwSwapBuffers(window);
+  }
+
+  glfwTerminate();
 }
 
 
@@ -144,118 +223,47 @@ void Viewer::computeCameraMatries() {
   modelMatrix.topLeftCorner(3,3) *= cameraZoom;
   modelMatrix.topLeftCorner(3,3) *= modelZoom;
   modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3,3)*modelTranslation;
+/*
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_TEST);
 
-}
+  shaderMesh.bind();
 
-void Viewer::launch() {
-  init();
-  setCallbacks();
+  glEnable(GL_POLYGON_OFFSET_FILL);
+  glPolygonOffset(1.0, 1.0);
+  shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
+  glDisable(GL_POLYGON_OFFSET_FILL);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  std::cout << "Compiling shaders .. ";
-  std::cout.flush();
-  shaderMesh.initFromFiles("shader_mesh",
-    "../src/shader_mesh.vert",
-    "../src/shader_mesh.frag",
-    "../src/shader_mesh.geom");
-  shaderWireframe.initFromFiles("shader_wireframe",
-    "../src/shader_wireframe.vert",
-    "../src/shader_wireframe.frag");
-  std::cout << "done." << std::endl;
+  glEnable(GL_LINE_SMOOTH);
+  glLineWidth(1.0f);
+  shaderWireframe.bind();
+  shaderWireframe.uploadAttrib("position", mesh.V);
+  shaderWireframe.setUniform("color", baseColor);
+  shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
+  shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
+*/
 
-  std::string filename = "../bunny.obj";
-  Eigen::MatrixXf V;
-  Eigen::MatrixXi F;
-  loader.loadObj(filename, V, F);
-  mesh.set(V, F);
+  glfwPostEmptyEvent();
 
-  while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
-
-    glfwPollEvents();
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    float ratio;
-    int frameWidth, frameHeight;
-    glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
-    ratio = frameWidth / (float)frameHeight;
-    glViewport(0, 0, frameWidth, frameHeight);
-
-    // Set transformaition parameters
-    computeCameraMatries();
-
-
-    glDepthFunc(GL_LEQUAL);
-    glEnable(GL_DEPTH_TEST);
-    glLineWidth(1.0f);
-
-    Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
-    Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
-    Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
-    Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
-    Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
-
-    shaderMesh.bind();
-
-    // vertex shader
-    shaderMesh.uploadIndices(mesh.F);
-    shaderMesh.uploadAttrib("position", mesh.V);
-    shaderMesh.uploadAttrib("normal", mesh.N);
-
-    // geometry shader
-    shaderMesh.setUniform("model", modelMatrix);
-    shaderMesh.setUniform("view", viewMatrix);
-    shaderMesh.setUniform("proj", projMatrix);
-    shaderMesh.setUniform("light_position", lightPosition);
-    shaderMesh.setUniform("camera_local", cameraLocal);
-
-    // fragment shader
-    shaderMesh.setUniform("show_uvs", 0.0f);
-    shaderMesh.setUniform("base_color", baseColor);
-    shaderMesh.setUniform("specular_color", specularColor);
-    // shaderMesh.setUniform("fixed_color", Eigen::Vector4f(1.0, 1.0, 1.0, 1.0));
-
-
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1.0, 1.0);
-    shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-
+  // Send texture paramters
+  /*
+  if (wireframe) {
     glEnable(GL_LINE_SMOOTH);
-    shaderWireframe.bind();
-    shaderWireframe.uploadAttrib("position", mesh.V);
-    shaderWireframe.setUniform("color", baseColor);
-    shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
-    shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
-
-
-    glfwPostEmptyEvent();
-
-    // Send texture paramters
-    /*
-    if (wireframe) {
-      glEnable(GL_LINE_SMOOTH);
-      glLineWidth(lineWidth);
-      glUniform4f(fixedColor, lineColor[0], lineColor[1],
-        lineColor[2], 1.0f);
-      opengl.drawMesh(false);
-      glUniform4f(fixedColor, 0.0f, 0.0f, 0.0f, 0.0f);
-    } else {
-      glUniform1f(textureFactor, 1.0f);
-      opengl.drawMesh(true);
-      glUniform1f(textureFactor, 0.0f);
-    }
-    */
-
-    screen->drawContents();
-    screen->drawWidgets();
-
-    glfwSwapBuffers(window);
+    glLineWidth(lineWidth);
+    glUniform4f(fixedColor, lineColor[0], lineColor[1],
+      lineColor[2], 1.0f);
+    opengl.drawMesh(false);
+    glUniform4f(fixedColor, 0.0f, 0.0f, 0.0f, 0.0f);
+  } else {
+    glUniform1f(textureFactor, 1.0f);
+    opengl.drawMesh(true);
+    glUniform1f(textureFactor, 0.0f);
   }
+  */
 
-  glfwTerminate();
 }
+
 
 void Viewer::debug() {
   GLShader mShader;
@@ -302,8 +310,7 @@ void Viewer::debug() {
 }
 
 
-
-void Viewer::setCallbacks() {
+void Viewer::initCallbacks() {
   glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
     screen->keyCallbackEvent(key, scancode, action, mods);
   });
@@ -345,7 +352,7 @@ void Viewer::setCallbacks() {
 
     double speed = 2.0;
     if (mouseDown) {
-      std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
+      // std::cout << Eigen::Vector4f(mouseDownX, mouseDownY, mouseX, mouseY) << std::endl;
       Eigen::Quaternionf diffRotation = control.motion(width, height, mouseX, mouseY, mouseDownX, mouseDownY, speed);
       arcballQuat = diffRotation * mouseDownRotation;
     }
@@ -356,7 +363,7 @@ void Viewer::setCallbacks() {
     screen->scrollCallbackEvent(x, y);
 
     float deltaY = y;
-    std::cout << deltaY << std::endl;
+    // std::cout << deltaY << std::endl;
     if (deltaY != 0) {
       float mult = (1.0 + ((deltaY>0) ? 1.0 : -1.0) * 0.05);
       const float minZoom = 0.1f;

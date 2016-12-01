@@ -15,12 +15,16 @@
 class Viewer {
 public:
   void init();
-  void launch();
+  void initShaders();
+  void initCallbacks();
 
-  void load();
+  void launch();
+  void load(std::string filename = "");
+
+  void showMesh();
+
   void save();
   void debug();
-  void setCallbacks();
   void computeCameraMatries();
 
   GLFWwindow *window;
