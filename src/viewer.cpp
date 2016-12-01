@@ -130,6 +130,10 @@ void Viewer::load(std::string filename) {
 }
 
 void Viewer::showMesh() {
+
+  Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
+  cameraLocal = Eigen::Vector3f(civ.head(3));
+
   shaderMesh.bind();
   shaderMesh.uploadIndices(mesh.F);
   shaderMesh.uploadAttrib("position", mesh.V);
@@ -223,6 +227,7 @@ void Viewer::computeCameraMatries() {
   modelMatrix.topLeftCorner(3,3) *= cameraZoom;
   modelMatrix.topLeftCorner(3,3) *= modelZoom;
   modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3,3)*modelTranslation;
+
 /*
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);
