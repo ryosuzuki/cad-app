@@ -186,7 +186,7 @@ void Viewer::launch() {
     Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
     Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
     Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
-    Eigen::Vector3f baseColor(1.0f, 0.0f, 1.0f);
+    Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
     Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 
 
@@ -208,6 +208,8 @@ void Viewer::launch() {
     shaderMesh.setUniform("show_uvs", 0.0f);
     shaderMesh.setUniform("base_color", baseColor);
     shaderMesh.setUniform("specular_color", specularColor);
+    // shaderMesh.setUniform("fixed_color", Eigen::Vector4f(1.0, 1.0, 1.0, 1.0));
+
 
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
