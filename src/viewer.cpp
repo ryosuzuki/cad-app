@@ -100,9 +100,7 @@ void Viewer::load() {
   Eigen::MatrixXf V;
   Eigen::MatrixXi F;
   loader.loadObj(filename, V, F);
-  vertices = V.transpose();
-  faces = F.transpose();
-  mesh.set(vertices, faces);
+  mesh.set(V, F);
   // this->mesh.setUv(vertexUvs, faceUvs);
 
   // core.align_camera_center(data.V,data.F);
@@ -195,9 +193,9 @@ void Viewer::launch() {
     shaderMesh.bind();
 
     // vertex shader
-    shaderMesh.uploadIndices(mesh.faces);
-    shaderMesh.uploadAttrib("position", mesh.vertices);
-    shaderMesh.uploadAttrib("normal", mesh.faceNormals);
+    shaderMesh.uploadIndices(mesh.F);
+    shaderMesh.uploadAttrib("position", mesh.V);
+    shaderMesh.uploadAttrib("normal", mesh.N);
 
     // geometry shader
     shaderMesh.setUniform("model", modelMatrix);
@@ -213,17 +211,17 @@ void Viewer::launch() {
 
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
-    shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.faces.cols());
+    shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
     glDisable(GL_POLYGON_OFFSET_FILL);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 
     glEnable(GL_LINE_SMOOTH);
     shaderWireframe.bind();
-    shaderWireframe.uploadAttrib("position", mesh.vertices);
+    shaderWireframe.uploadAttrib("position", mesh.V);
     shaderWireframe.setUniform("color", baseColor);
     shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
-    shaderWireframe.drawIndexed(GL_LINES, 0, mesh.faces.cols());
+    shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
 
 
 

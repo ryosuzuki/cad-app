@@ -28,12 +28,5 @@ public:
   GLShader shaderMesh;
   GLShader shaderWireframe;
 
-  Eigen::MatrixXf vertices;
-  Eigen::MatrixXi faces;
-  Eigen::MatrixXf vertexUvs;
-  Eigen::MatrixXi faceUvs;
-  Eigen::MatrixXf cornerNormals;
-  Eigen::MatrixXi faceNormalIndices;
-
 };
 
