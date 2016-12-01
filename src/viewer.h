@@ -24,7 +24,8 @@ public:
 
   GLFWwindow *window;
   Mesh mesh;
-  GLShader shader;
+  GLShader shaderMesh;
+  GLShader shaderWireframe;
 
   Eigen::MatrixXf vertices;
   Eigen::MatrixXi faces;

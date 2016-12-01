@@ -17,6 +17,9 @@ in fData {
 out vec4 outColor;
 
 void main() {
+  outColor = vec4(1.0, 1.0, 1.0, 1.0);
+  return;
+
   if (fixed_color.a != 0.0) {
     outColor = fixed_color;
     return;

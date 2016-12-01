@@ -158,20 +158,21 @@ void Viewer::launch() {
   init();
   setCallbacks();
 
-  // opengl.init();
-  std::string vertFile = "../src/shader_mesh.vert";
-  std::string fragFile = "../src/shader_mesh.frag";
-  std::string geomFile = "../src/shader_mesh.geom";
-  shader.initFromFiles("shader_mesh", vertFile, fragFile, geomFile);
+  shaderMesh.initFromFiles("shader_mesh",
+    "../src/shader_mesh.vert",
+    "../src/shader_mesh.frag",
+    "../src/shader_mesh.geom");
 
+  shaderWireframe.initFromFiles("shader_wireframe",
+    "../src/shader_wireframe.vert",
+    "../src/shader_wireframe.frag",
+    "../src/shader_wireframe.geom");
 
   std::string filename = "../bunny.obj";
   Eigen::MatrixXf V;
   Eigen::MatrixXi F;
   loader.loadObj(filename, V, F);
-  vertices = V.transpose();
-  faces = F.transpose();
-  mesh.set(vertices, faces);
+  mesh.set(V, F);
 
   while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
 
@@ -185,67 +186,44 @@ void Viewer::launch() {
     ratio = frameWidth / (float)frameHeight;
     glViewport(0, 0, frameWidth, frameHeight);
 
-    // opengl.setMesh(mesh);
-    // opengl.bindMesh();
-
-    Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
-    Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
-    Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
-    Eigen::Vector3f baseColor(0.0f, -0.30f, -5.0f);
-    Eigen::Vector3f specularColor(0.0f, -0.30f, -5.0f);
-
-    shader.bind();
-
-    // vertex shader
-    shader.uploadAttrib("position", mesh.vertices);
-    shader.uploadAttrib("normal", mesh.vertexNormals);
-
-    // geometry shader
-    shader.setUniform("model", modelMatrix);
-    shader.setUniform("view", viewMatrix);
-    shader.setUniform("proj", projMatrix);
-    shader.setUniform("light_position", lightPosition);
-    shader.setUniform("camera_local", cameraLocal);
-
-    // fragment shader
-    shader.setUniform("show_uvs", 0.0f);
-    shader.setUniform("base_color", baseColor);
-    shader.setUniform("specular_color", specularColor);
-
     // Set transformaition parameters
     computeCameraMatries();
 
-    // Send transformaition parameters
-    /*
-    GLint model = opengl.shaderMesh.uniform("model");
-    GLint view = opengl.shaderMesh.uniform("view");
-    GLint proj = opengl.shaderMesh.uniform("proj");
-    glUniformMatrix4fv(model, 1, GL_FALSE, modelMatrix.data());
-    glUniformMatrix4fv(view, 1, GL_FALSE, viewMatrix.data());
-    glUniformMatrix4fv(proj, 1, GL_FALSE, projMatrix.data());
-    */
 
-    // Set light parameters
-    /*
-    float shininess = 35.0f;
-    float lightOn = 1.0f;
-    Eigen::Vector3f lightPosition(0.0f, -0.30f, -5.0f);
-    */
+    // opengl.setMesh(mesh);
+    // opengl.bindMesh();
 
-    // Send light parameters
-    /*
-    GLint specularExponent = opengl.shaderMesh.uniform("specular_exponent");
-    GLint lightPositionWorld = opengl.shaderMesh.uniform("light_position_world");
-    GLint lightingFactor = opengl.shaderMesh.uniform("lighting_factor");
-    GLint fixedColor = opengl.shaderMesh.uniform("fixed_color");
-    GLint textureFactor = opengl.shaderMesh.uniform("texture_factor");
+    Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
+    Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
+    Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
+    Eigen::Vector3f baseColor(1.0f, 0.0f, 1.0f);
+    Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 
-    glUniform1f(specularExponent, shininess);
-    Eigen::Vector3f revLight = -1.*lightPosition;
-    glUniform3fv(lightPositionWorld, 1, revLight.data());
-    glUniform1f(lightingFactor, lightOn);
-    glUniform4f(fixedColor, 1.0, 1.0, 1.0, 1.0);
-    */
+    shaderMesh.bind();
+
+    // vertex shader
+    shaderMesh.uploadAttrib("position", mesh.vertices);
+    shaderMesh.uploadIndices(mesh.faces);
+    // mesh.vertexNormals = Eigen::Matrix4f
+
+    // shaderMesh.uploadAttrib("normal", mesh.faceNormals);
+    // std::cout << V << std::endl;
+
+    // geometry shader
+    shaderMesh.setUniform("model", modelMatrix);
+    shaderMesh.setUniform("view", viewMatrix);
+    shaderMesh.setUniform("proj", projMatrix);
+    shaderMesh.setUniform("light_position", lightPosition);
+    shaderMesh.setUniform("camera_local", cameraLocal);
+
+    // fragment shader
+    shaderMesh.setUniform("show_uvs", 0.0f);
+    shaderMesh.setUniform("base_color", baseColor);
+    shaderMesh.setUniform("specular_color", specularColor);
+
+    shaderWireframe.uploadAttrib("position", mesh.vertices);
+    shaderWireframe.setUniform("color", baseColor);
+    shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
 
     // Send texture paramters
     /*
@@ -262,6 +240,7 @@ void Viewer::launch() {
       glUniform1f(textureFactor, 0.0f);
     }
     */
+
 
     screen->drawContents();
     screen->drawWidgets();
