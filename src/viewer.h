@@ -21,13 +21,13 @@ public:
   void launch();
   void load(std::string filename = "");
 
-  void showMesh();
+  void drawMesh();
+  void drawWireframe();
 
   void save();
   void debug();
   void computeCameraMatries();
 
-  GLFWwindow *window;
   Mesh mesh;
   GLShader shaderMesh;
   GLShader shaderWireframe;

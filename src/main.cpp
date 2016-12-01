@@ -10,7 +10,5 @@ int main() {
   Viewer viewer;
   viewer.launch();
 
-  nanogui::mainloop();
-  nanogui::shutdown();
   return 0;
 }
