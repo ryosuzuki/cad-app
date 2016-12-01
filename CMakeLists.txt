@@ -38,6 +38,11 @@ include_directories(
   ${NANOGUI_EXTRA_INCS} # Eigen, GLFW, NanoVG, GLAD
 )
 
+file(GLOB FRAG_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.frag")
+file(GLOB VERT_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.vert")
+file(GLOB GEO_FILES  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.geom")
+set(GLSL_FILES ${FRAG_FILES} ${VERT_FILES} ${GEO_FILES})
+
 add_executable(cad-app
   src/main.cpp
   src/viewer.h src/viewer.cpp

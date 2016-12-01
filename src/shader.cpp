@@ -65,6 +65,8 @@ bool GLShader::initFromFiles(const std::string &name, const std::string &vertex_
     std::istreambuf_iterator<char>());
   };
 
+  std::cout << file_to_string(fragment_fname) << std::endl;
+
   return init(name, file_to_string(vertex_fname), file_to_string(fragment_fname), file_to_string(geometry_fname));
 }
 
@@ -142,7 +144,7 @@ void GLShader::setUniform(const std::string &name, const GLUniformBuffer &buf, b
 GLint GLShader::uniform(const std::string &name, bool warn) const {
   GLint id = glGetUniformLocation(mProgramShader, name.c_str());
   if (id == -1 && warn) {
-    std::cerr << mName << ": warning: did not find uniform " << name << std::endl;
+    // std::cerr << mName << ": warning: did not find uniform " << name << std::endl;
   }
   return id;
 }

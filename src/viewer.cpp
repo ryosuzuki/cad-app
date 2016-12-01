@@ -167,7 +167,10 @@ void Viewer::launch() {
   mesh.set(vertices, faces);
 
   // opengl.init();
-  shader.initFromFiles("shader_mesh", "shader_mesh.vert", "shader_mesh.frag", "shader_mesh.geom");
+  std::string vertFile = "../src/shader_mesh.vert";
+  std::string fragFile = "../src/shader_mesh.frag";
+  std::string geomFile = "../src/shader_mesh.geom";
+  shader.initFromFiles("shader_mesh", vertFile, fragFile, geomFile);
 
   while (glfwWindowShouldClose(window) == 0 && glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS) {
 

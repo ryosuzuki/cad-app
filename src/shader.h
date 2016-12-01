@@ -66,14 +66,9 @@ public:
     : mVertexShader(0), mFragmentShader(0), mGeometryShader(0),
       mProgramShader(0), mVertexArrayObject(0) { }
 
-  bool init(const std::string &name, const std::string &vertex_str,
-            const std::string &fragment_str,
-            const std::string &geometry_str = "");
+  bool init(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str = "");
 
-  bool initFromFiles(const std::string &name,
-                     const std::string &vertex_fname,
-                     const std::string &fragment_fname,
-                     const std::string &geometry_fname = "");
+  bool initFromFiles(const std::string &name, const std::string &vertex_fname, const std::string &fragment_fname, const std::string &geometry_fname = "");
 
   const std::string &name() const { return mName; }
 
@@ -208,11 +203,8 @@ public:
 
 public:
   /* Low-level API */
-  void uploadAttrib(const std::string &name, size_t size, int dim,
-                    uint32_t compSize, GLuint glType, bool integral,
-                    const void *data, int version = -1);
-  void downloadAttrib(const std::string &name, size_t size, int dim,
-                      uint32_t compSize, GLuint glType, void *data);
+  void uploadAttrib(const std::string &name, size_t size, int dim, uint32_t compSize, GLuint glType, bool integral, const void *data, int version = -1);
+  void downloadAttrib(const std::string &name, size_t size, int dim, uint32_t compSize, GLuint glType, void *data);
 
 protected:
   /**
