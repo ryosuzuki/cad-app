@@ -1,7 +1,6 @@
 
 #include "loader.h"
 
-
 void Loader::loadObj(const std::string &filename, Eigen::MatrixXf &V, Eigen::MatrixXi &F) {
   struct obj_vertex {
     uint32_t p = (uint32_t) -1;

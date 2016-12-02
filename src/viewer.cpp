@@ -32,14 +32,11 @@ Eigen::Vector3f cameraUp(0, 1, 0);
 Eigen::Vector3f modelTranslation(0, 0, 0);
 Eigen::Vector4f viewport(0, 0, 800, 800);
 
-
-
 Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
 Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
 Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
 Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
 Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
-
 
 float currentMouseX;
 float currentMouseY;
@@ -47,8 +44,6 @@ float mouseDownX;
 float mouseDownY;
 float mouseDownZ;
 Eigen::Quaternionf mouseDownRotation;
-
-
 
 void Viewer::init() {
 
@@ -243,20 +238,6 @@ void Viewer::computeCameraMatries() {
   modelMatrix.topLeftCorner(3, 3) *= cameraZoom;
   modelMatrix.topLeftCorner(3, 3) *= modelZoom;
   modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3, 3) * modelTranslation;
-
-  /*
-    glDepthFunc(GL_LEQUAL);
-    glEnable(GL_DEPTH_TEST);
-
-    shaderMesh.bind();
-
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1.0, 1.0);
-    shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-  */
 
   glfwPostEmptyEvent();
 }
