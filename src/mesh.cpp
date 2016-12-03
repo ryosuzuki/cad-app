@@ -6,6 +6,7 @@ void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
   V = V_;
   F = F_;
   computeNormals();
+  computeAdjacencyMatrix();
 }
 
 void Mesh::computeNormals() {
@@ -53,3 +54,60 @@ void Mesh::computeNormals() {
   }
   std::cout << "done." << std::endl;
 }
+
+void Mesh::computeAdjacencyMatrix() {
+  typedef Eigen::Triplet<int> T;
+  std::vector<T> adj_ij;
+  adj_ij.reserve(F.size()*2);
+
+  for (int i=0; i<3; i++) {
+    for (int j=0; j<F.cols(); j++) {
+      int source = F(i, j);
+      int dest = F((i+1)%3, j);
+      adj_ij.push_back(T(source, dest, 1));
+      adj_ij.push_back(T(dest, source, 1));
+    }
+  }
+
+  A.resize(V.cols(), V.cols());
+  A.reserve(6*(F.maxCoeff()+1));
+
+  A.setFromTriplets(adj_ij.begin(), adj_ij.end());
+
+  for(int k=0; k<A.outerSize(); ++k) {
+    for(typename Eigen::SparseMatrix<int>::InnerIterator it (A,k); it; ++it) {
+      assert(it.value() != 0);
+      A.coeffRef(it.row(),it.col()) = 1;
+    }
+  }
+  std::cout << A << std::endl;
+}
+
+void Mesh::computeAdjacencyList() {
+  std::vector<std::vector<int> > adjList;
+  adjList.clear();
+  adjList.resize(F.maxCoeff()+1);
+
+  for (int i=0; i<3; i++) {
+    for (int j=0; j<F.cols(); j++) {
+      int source = F(i, j);
+      int dest = F((i+1)%3, j);
+      adjList.at(source).push_back(dest);
+      adjList.at(dest).push_back(source);
+    }
+  }
+
+  // Remove duplicates
+  for (int i=0; i<(int)adjList.size(); i++) {
+    std::sort(adjList[i].begin(), adjList[i].end());
+    adjList[i].erase(std::unique(adjList[i].begin(), adjList[i].end()), adjList[i].end());
+  }
+}
+
+
+
+
+
+
+
+
