@@ -11,13 +11,19 @@ public:
   void set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_);
   void computeNormals();
   void computeAdjacencyMatrix();
-  void computeAdjacencyList();
+  void computeEdgeLength();
+  void computeWeightMatrix();
+  void computeLaplacianMatrix();
 
   Eigen::MatrixXf V;
   Eigen::MatrixXi F;
   Eigen::MatrixXf Nf;
   Eigen::MatrixXf N;
 
+  Eigen::MatrixXf E;
+  Eigen::MatrixXf W;
+
+  Eigen::SparseMatrix<int> L;
   Eigen::SparseMatrix<int> A;
   std::vector<std::vector<int> > adjList;
 
