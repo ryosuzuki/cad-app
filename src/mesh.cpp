@@ -123,6 +123,15 @@ void Mesh::computeLaplacianMatrix() {
   std::cout << "done." << std::endl;
 }
 
+void computeCovarianceMatrix() {
+  Einge::SparseMatrix<float> KX, KY, KZ;
+
+  SparseMatrix<float> ZZ(n, nr*2)
+
+
+}
+
+
 void Mesh::computeAdjacencyMatrix() {
   std::cout << "Computing adjacency matrix.. ";
 
