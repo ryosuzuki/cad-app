@@ -15,14 +15,14 @@ void ARAP::deform(Eigen::MatrixXf &U) {
   Vprime = V;
   init();
 
-  // int iter = 0;
-  // int iterMax = 5;
-  // while (iter < iterMax) {
-  //   estimateRotations();
-  //   estimatePositions();
-  //   iter++;
-  // }
-  // U = Vprime;
+  int iter = 0;
+  int iterMax = 5;
+  while (iter < iterMax) {
+    estimateRotations();
+    estimatePositions();
+    iter++;
+  }
+  U = Vprime;
 }
 
 void ARAP::init() {
@@ -66,7 +66,6 @@ void ARAP::initLinearSystem() {
   for (int i=0; i<W.outerSize(); ++i) {
     int idx_i = freeIdxMap[i];
     if (idx_i == -1) {
-      std::cout << idx_i << ' ';
       continue;
     }
 
@@ -85,15 +84,15 @@ void ARAP::initLinearSystem() {
   }
 
   L.setFromTriplets(l_ij.begin(), l_ij.end());
-  std::cout << L.size() << std::endl;
+  // std::cout << L.size() << std::endl;
 
-  for (int i=0; i<L.outerSize(); ++i) {
-    for(Eigen::SparseMatrix<float>::InnerIterator it(L, i); it; ++it) {
-      std::cout << "(" << it.row() << ","; // row index (j)
-      std::cout << it.col() << ")\t"; // col index (i)
-      std::cout << it.value() << std::endl;
-    }
-  }
+  // for (int i=0; i<L.outerSize(); ++i) {
+  //   for(Eigen::SparseMatrix<float>::InnerIterator it(L, i); it; ++it) {
+  //     std::cout << "(" << it.row() << ","; // row index (j)
+  //     std::cout << it.col() << ")\t"; // col index (i)
+  //     std::cout << it.value() << std::endl;
+  //   }
+  // }
   solver.compute(L);
 }
 
@@ -119,47 +118,46 @@ void ARAP::estimateRotations() {
     Eigen::JacobiSVD<Eigen::MatrixXf> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::MatrixXf SV = svd.matrixV();
     Eigen::MatrixXf SU = svd.matrixU();
-    Eigen::MatrixXf id = Eigen::MatrixXf::Identity(3, 3);
-    id(2, 2) = (SV * SU.transpose()).determinant();
+    Eigen::MatrixXf I = Eigen::MatrixXf::Identity(3, 3);
+    I(2, 2) = (SV * SU.transpose()).determinant();
 
     // Rotation matrix for vertex i
-    R[i] = (SV * id * SU.transpose());
+    R[i] = (SV * I * SU.transpose());
   }
-
-  // std::cout << R[38] << std::endl;
 }
 
 void ARAP::estimatePositions() {
   b = bFixed;
 
-  for (int i=0; i<W.outerSize(); i++) {
-    Eigen::MatrixXf cov;
-    cov = Eigen::MatrixXf::Zero(3, 3);
+  for (int i=0; i<W.outerSize(); ++i) {
+    int idx_i = freeIdxMap[i];
+    if (idx_i == -1) {
+      continue;
+    }
 
-    for (Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
+    for(Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
       int j = it.row();
       float w_ij = it.value();
 
       Eigen::MatrixXf r = R[i] + R[j];
-
       Eigen::Vector3f p_i = V.col(i);
       Eigen::Vector3f p_j = V.col(j);
-
       Eigen::Vector3f p = r * (p_i - p_j) * w_ij * 0.5;
-      b.col(i) += p;
+      b.col(idx_i) += p;
     }
   }
 
   // Solve Lp' = b
   Eigen::Matrix<float, Eigen::Dynamic, 1> LU;
-  for (int i=0; i<3; i++) {
+  for (int i=0; i<3; ++i) {
     LU = solver.solve(b.row(i).transpose());
 
     int idx = 0;
-    for (int j=0; j < freeIdx; j++) {
-      if (freeIdxMap[i] != -1) {
+    for (int j=0; j < freeIdx; ++j) {
+      if (freeIdxMap[j] != -1) {
         Vprime(i, j) = LU(idx++);
       }
     }
   }
+  // std::cout << Vprime << std::endl;
 }

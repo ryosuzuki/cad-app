@@ -182,23 +182,7 @@ void Viewer::launch() {
   arap.setConstraint(38, mesh.V.col(38));
 
   float pi = -3.14;
-  float add = 0.1;
-
-
-  int id = 100;
-  Eigen::Vector3f position = mesh.V.col(100);
-
-  pi += add;
-  if (std::abs(pi) > M_PI_2) {
-    add *= -1.0;
-    pi += add;
-  }
-  position = position + Eigen::Vector3f(0, 0, std::sin(pi));
-  arap.setConstraint(id, position);
-  arap.deform(mesh.V);
-
-  // std::cout << mesh.W << std::endl;
-
+  float add = 0.01;
 
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();
@@ -210,6 +194,18 @@ void Viewer::launch() {
     glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
     ratio = frameWidth / (float)frameHeight;
     glViewport(0, 0, frameWidth, frameHeight);
+
+
+    int id = 100;
+    Eigen::Vector3f position = mesh.V.col(100);
+    pi += add;
+    if (std::abs(pi) > M_PI_2) {
+      add *= -1.0;
+      pi += add;
+    }
+    position = position + Eigen::Vector3f(0, 0, std::sin(pi));
+    arap.setConstraint(id, position);
+    arap.deform(mesh.V);
 
     computeCameraMatries();
     drawMesh();
