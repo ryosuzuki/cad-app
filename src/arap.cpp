@@ -1,145 +1,165 @@
 
-
 #include "arap.h"
 
-
-void ARAP::init(Eigen::MatrixXf &V, Eigen::MatrixXi &F, Eigen::VectorXi &b) {
-
-  data.size = V.cols();
-  data.b = b;
-
-  data.F_ext = Eigen::MatrixXf::Zero(3, V.cols());
-
-  Eigen::SparseMatrixS refMap, refMapDim;
-
-  const Eigen::MatrixXf &refV = V;
-  const Eigen::MatrixXi &refF = F;
-  Eigen::SparseMatrixS L;
-
-  cotmatrix(V, F, L);
-
-  Eigen::SparseMatrixS CSM;
-
-  covariance_scatter_matrix(refV, refF, ARAP_ENERGY_TYPE_ELEMENTS, CSM);
-
-  Eigen::SparseMatrixS G_sum;
-  Eigen::MatrixXi GG;
-  Eigen::MatrixXi GF(3 F.cols());
-  for (int f = 0; f < 3; f++) {
-    Eigen::MatrixXi GFF;
-    slice(G, F.row(f), GFF);
-    GF.row(f) = GFF;
-  }
-  data.G = GG;
-
-  Eigen::SparseMatrixXf G_sum_dim;
-
-  main_quad_with_fixed_precompute(Q, b, data.solver_data);
-
+void ARAP::set(const Mesh &mesh) {
+  V = mesh.V;
+  F = mesh.F;
+  W = mesh.W;
 }
 
-void computeAdjacency(Eigen::MatrixXf &V, Eigen::MatrixXi &F, Eigen::MatrixXi &A) {
-
+void ARAP::setConstraint(int id, const Eigen::Vector3f &position) {
+  constraints[id] = position;
 }
 
-void computeWeightMatrix() {
-  vector<Triplet<float> > weight_list;
-  weight_list.reserve(3 * 7 * P_Num); // each vertex may have about 7 vertices connected
+void ARAP::deform(Eigen::MatrixXf &U) {
+  Vprime = V;
+  init();
 
+  // int iter = 0;
+  // int iterMax = 5;
+  // while (iter < iterMax) {
+  //   estimateRotations();
+  //   estimatePositions();
+  //   iter++;
+  // }
+  // U = Vprime;
+}
+
+void ARAP::init() {
+  initRotations();
+  initConstraints();
+  initLinearSystem();
+}
+
+void ARAP::initRotations() {
+  R.clear();
+  R.resize(V.cols(), Eigen::MatrixXf::Identity(3, 3));
+}
+
+void ARAP::initConstraints() {
+  freeIdxMap.resize(V.cols());
+  freeIdx = 0;
   for (int i=0; i<V.cols(); i++) {
-    for (decltype(adj_list[i].size()) j = 0; j != adj_list[i].size(); ++j) {
-      int id_j = adj_list[i][j];
+    int idx = constraints.find(i) != constraints.end() ? -1 : freeIdx++;
+    freeIdxMap[i] = idx;
+  }
 
-      vector<int> share_vertex;
-      find_share_vertex(i, id_j, share_vertex);
+  for (auto i = constraints.begin(); i != constraints.end(); i++) {
+    Vprime.col(i->first) = i->second;
+  }
+}
 
-      float wij = 0;
+void ARAP::initLinearSystem() {
+  L.resize(freeIdx, freeIdx);
+  L.reserve(Eigen::VectorXi::Constant(freeIdx, 7));
+  L.setZero();
+
+  bFixed.resize(3, freeIdx);
+  bFixed.setZero();
+
+  b.resize(3, freeIdx);
+
+  typedef Eigen::Triplet<float> T;
+  std::vector<T> l_ij;
+  l_ij.reserve(freeIdx * 7);
+
+  for (int i=0; i<W.outerSize(); ++i) {
+    int idx_i = freeIdxMap[i];
+    if (idx_i == -1) {
+      std::cout << idx_i << ' ';
+      continue;
+    }
+
+    for(typename Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
+      int j = it.row();
+      int idx_j = freeIdxMap[j];
+      float w_ij = it.value();
+
+      if (idx_j == -1) {
+        bFixed.col(idx_i) += w_ij * constraints[j];
+      } else {
+        l_ij.push_back(T(idx_i, idx_j, -w_ij));
+      }
+      l_ij.push_back(T(idx_i, idx_i, w_ij));
     }
   }
 
-  Weight.resize(3 * P_Num, 3 * P_Num);
-  Weight.setFromTriplets(weight_list.begin(), weight_list.end());
+  L.setFromTriplets(l_ij.begin(), l_ij.end());
+  std::cout << L.size() << std::endl;
+
+  for (int i=0; i<L.outerSize(); ++i) {
+    for(Eigen::SparseMatrix<float>::InnerIterator it(L, i); it; ++it) {
+      std::cout << "(" << it.row() << ","; // row index (j)
+      std::cout << it.col() << ")\t"; // col index (i)
+      std::cout << it.value() << std::endl;
+    }
+  }
+  solver.compute(L);
 }
 
 
-void computeLaplacianMatrix(Eigen::MatrixXf &V, Eigen::MatrixXi &F, Eigen::SparseMatrix<float> &L) {
+void ARAP::estimateRotations() {
+  for (int i=0; i<W.outerSize(); i++) {
+    Eigen::MatrixXf cov;
+    cov = Eigen::MatrixXf::Zero(3, 3);
 
-  SparseMatrix<float> weight = Weight;
+    for (Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
+      int j = it.row();
+      float w_ij = it.value();
 
-  vector<Triplet<float> > weight_sum;
-  weight_sum.reserve(3 * P_Num);
+      Eigen::Vector3f p_i = V.col(i);
+      Eigen::Vector3f pp_i = Vprime.col(i);
+      Eigen::Vector3f p_j = V.col(j);
+      Eigen::Vector3f pp_j = Vprime.col(j);
 
-  for (int i = 0; i < V.cols(); i++) {
-
-    for (int j = 0; j < A[i].size(); j++) {
-      int id_j = adjList[]
+      cov += w_ij * ((p_i - p_j)*(pp_i - pp_j).transpose());
     }
 
+    // Jacobian SVD (Singular Value Decomposition)
+    Eigen::JacobiSVD<Eigen::MatrixXf> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::MatrixXf SV = svd.matrixV();
+    Eigen::MatrixXf SU = svd.matrixU();
+    Eigen::MatrixXf id = Eigen::MatrixXf::Identity(3, 3);
+    id(2, 2) = (SV * SU.transpose()).determinant();
+
+    // Rotation matrix for vertex i
+    R[i] = (SV * id * SU.transpose());
   }
 
+  // std::cout << R[38] << std::endl;
+}
 
-  for (int i = 0; i != P_Num; ++i) {
-    float wi = 0;
+void ARAP::estimatePositions() {
+  b = bFixed;
 
-    for (decltype(adj_list[i].size()) j = 0; j != adj_list[i].size(); ++j)
-    {
-      int id_j = adj_list[i][j];
+  for (int i=0; i<W.outerSize(); i++) {
+    Eigen::MatrixXf cov;
+    cov = Eigen::MatrixXf::Zero(3, 3);
 
-      if (is_hard_ctrs(i) == -1)
-        wi += Weight.coeffRef(i, id_j);
-      else
-      {
-        weight.coeffRef(i, id_j) = 0;
-        weight.coeffRef(i + P_Num, id_j + P_Num) = 0;
-        weight.coeffRef(i + 2 * P_Num, id_j + 2 * P_Num) = 0;
+    for (Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
+      int j = it.row();
+      float w_ij = it.value();
 
-        wi = 1;
+      Eigen::MatrixXf r = R[i] + R[j];
+
+      Eigen::Vector3f p_i = V.col(i);
+      Eigen::Vector3f p_j = V.col(j);
+
+      Eigen::Vector3f p = r * (p_i - p_j) * w_ij * 0.5;
+      b.col(i) += p;
+    }
+  }
+
+  // Solve Lp' = b
+  Eigen::Matrix<float, Eigen::Dynamic, 1> LU;
+  for (int i=0; i<3; i++) {
+    LU = solver.solve(b.row(i).transpose());
+
+    int idx = 0;
+    for (int j=0; j < freeIdx; j++) {
+      if (freeIdxMap[i] != -1) {
+        Vprime(i, j) = LU(idx++);
       }
     }
-
-    if (is_soft_ctrs(i) != -1 && at == HARD_SOFT)
-      wi += lambda / 2;
-
-    weight_sum.push_back(Triplet<float>(i, i, wi));
-    weight_sum.push_back(Triplet<float>(i + P_Num, i + P_Num, wi));
-    weight_sum.push_back(Triplet<float>(i + 2 * P_Num, i + 2 * P_Num, wi));
   }
-
-  SparseMatrix<float> Weight_sum(3 * P_Num, 3 * P_Num);
-  Weight_sum.setFromTriplets(weight_sum.begin(), weight_sum.end());
-
-  L =  Weight_sum - weight;
-
-  chol.analyzePattern(L);
-  chol.factorize(L);
-
-
-
-  L.resize(V.cols(), V.cols());
-  Eigen::MatrixXi edges;
-  L.reserve(10 * V.cols());
-  edges.resize(3, 2);
-  edges << 1, 2, 2, 0, 0, 1;
-
-  Eigen::Matrix<Scalar, Dynamic, Dynamic> C;
-  cotmatrix_entries(V, F, C);
-
-  vector<Triplet<Scalar> > IJV;
-  IJV.reserve(F.rows()*edges.rows() * 4);
-
-  for (int i = 0; i < F.cols(); i++) {
-    for (int e = 0; e < edges.rows(); e++) {
-      int source = F(edges(e, 0), i);
-      int dest = F(edges(e, 1), i);
-      IJV.push_back(Triplet<Scalar>(source, dest, C(i, e)));
-      IJV.push_back(Triplet<Scalar>(dest, source, C(i, e)));
-      IJV.push_back(Triplet<Scalar>(source, source, -C(i, e)));
-      IJV.push_back(Triplet<Scalar>(dest, dest, -C(i, e)));
-    }
-  }
-  L.setFromTriplets(IJV.begin(), IJV.end());
-
 }
-
-
-

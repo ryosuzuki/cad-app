@@ -5,6 +5,8 @@ nanogui::Screen *screen = nullptr;
 GLFWwindow *window;
 Control control;
 Loader loader;
+ARAP arap;
+
 
 float width = 800;
 float height = 800;
@@ -103,7 +105,7 @@ void Viewer::initShaders() {
 }
 
 void Viewer::load(std::string filename) {
-  std::cout << "Loading OBJ file .. " << std::endl;
+  std::cout << "Loading OBJ file .. ";
 
   if (filename.empty()) {
     filename = nanogui::file_dialog({
@@ -116,7 +118,6 @@ void Viewer::load(std::string filename) {
   loader.loadObj(filename, V, F);
   mesh.set(V, F);
 
-  std::cout << filename << std::endl;
   std::cout << "done." << std::endl;
 }
 
@@ -176,6 +177,28 @@ void Viewer::launch() {
   initShaders();
   initCallbacks();
   load("../bunny.obj");
+
+  arap.set(mesh);
+  arap.setConstraint(38, mesh.V.col(38));
+
+  float pi = -3.14;
+  float add = 0.1;
+
+
+  int id = 100;
+  Eigen::Vector3f position = mesh.V.col(100);
+
+  pi += add;
+  if (std::abs(pi) > M_PI_2) {
+    add *= -1.0;
+    pi += add;
+  }
+  position = position + Eigen::Vector3f(0, 0, std::sin(pi));
+  arap.setConstraint(id, position);
+  arap.deform(mesh.V);
+
+  // std::cout << mesh.W << std::endl;
+
 
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();

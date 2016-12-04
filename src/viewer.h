@@ -11,6 +11,7 @@
 #include "shader.h"
 #include "control.h"
 #include "loader.h"
+#include "arap.h"
 
 class Viewer {
 public:

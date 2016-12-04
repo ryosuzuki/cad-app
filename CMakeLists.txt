@@ -50,6 +50,7 @@ add_executable(cad-app
   src/shader.h src/shader.cpp
   src/control.h src/control.cpp
   src/loader.h src/loader.cpp
+  src/arap.h src/arap.cpp
 )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})
