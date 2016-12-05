@@ -10,6 +10,7 @@ uniform vec3 camera_local;
 in vData {
   vec3 normal;
   vec2 texcoord;
+  vec4 color;
 } vertices[];
 
 out fData {
@@ -17,6 +18,7 @@ out fData {
   vec3 to_light;
   vec3 normal;
   vec2 texcoord;
+  vec4 color;
 } frag;
 
 void main() {
@@ -36,7 +38,7 @@ void main() {
     frag.to_eye = -pos_camera.xyz;
     frag.normal = (model * (view * vec4(vn, 0.0))).xyz;
     frag.texcoord = vertices[i].texcoord;
-
+    frag.color = vertices[i].color;
     EmitVertex();
   }
   EndPrimitive();

@@ -40,6 +40,8 @@ Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
 Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
 Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 
+Eigen::Matrix4f vertexColor;
+
 float currentMouseX;
 float currentMouseY;
 float mouseDownX;
@@ -129,6 +131,7 @@ void Viewer::drawMesh() {
   shaderMesh.uploadIndices(mesh.F);
   shaderMesh.uploadAttrib("position", mesh.V);
   shaderMesh.uploadAttrib("normal", mesh.N);
+  shaderMesh.uploadAttrib("color", mesh.C);
   shaderMesh.setUniform("model", modelMatrix);
   shaderMesh.setUniform("view", viewMatrix);
   shaderMesh.setUniform("proj", projMatrix);
@@ -181,9 +184,13 @@ void Viewer::launch() {
   arap.set(mesh);
   arap.setConstraint(37, mesh.V.col(37));
 
-  int id = 36;
+  int id = 32;
   float pi = -3.14;
   float add = 0.01;
+
+
+  mesh.setColor(37, Eigen::Vector4f(1.0, 0.0, 0.0, 1.0));
+  mesh.setColor(32, Eigen::Vector4f(0.0, 1.0, 0.0, 1.0));
 
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();

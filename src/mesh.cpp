@@ -5,9 +5,15 @@
 void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
   V = V_;
   F = F_;
+  C.resize(4, V.cols());
+  C.setZero();
   computeNormals();
   computeAdjacencyMatrix();
   computeWeightMatrix();
+}
+
+void Mesh::setColor(int id, const Eigen::Vector4f &color) {
+  C.col(id) = color;
 }
 
 void Mesh::computeNormals() {

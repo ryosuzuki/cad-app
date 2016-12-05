@@ -11,6 +11,7 @@ in fData {
   vec3 to_light;
   vec3 normal;
   vec2 texcoord;
+  vec4 color;
 } frag;
 
 out vec4 outColor;
@@ -33,7 +34,7 @@ void main() {
   float diffuse_factor = max(0.0, dot(to_light, normal));
   float specular_factor = pow(max(dot(to_eye, refl), 0.0), 10.0);
 
-  vec3 finalColor = Ka + Kd*diffuse_factor + Ks*specular_factor;
+  vec3 finalColor = (Ka + Kd*diffuse_factor + Ks*specular_factor) * (1-frag.color.a) + (frag.color.rgb * frag.color.a);
 
   if (show_uvs == 1.0) {
     // add uv mapping with texcoord
