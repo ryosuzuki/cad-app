@@ -153,11 +153,20 @@ void ARAP::estimatePositions() {
   for (int i=0; i<3; ++i) {
     LU = solver.solve(b.row(i).transpose());
     int idx = 0;
-    for (int j=0; j < freeIdx; ++j) {
+    for (int j=0; j < V.cols(); ++j) {
       if (freeIdxMap[j] != -1) {
         Vprime(i, j) = LU(idx++);
       }
     }
   }
+
+  // std::cout << freeIdxMap[641] << std::endl;
+  // 37, 640, 641
+  for (int j=0; j<V.cols(); ++j) {
+    if (V.col(j) == Vprime.col(j)) {
+      // std::cout << j << std::endl;
+    }
+  }
+
   // std::cout << Vprime << std::endl;
 }
