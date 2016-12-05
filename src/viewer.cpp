@@ -176,11 +176,12 @@ void Viewer::launch() {
   init();
   initShaders();
   initCallbacks();
-  load("../bunny.obj");
+  load("../sphere.obj");
 
   arap.set(mesh);
-  arap.setConstraint(38, mesh.V.col(38));
+  arap.setConstraint(37, mesh.V.col(37));
 
+  int id = 36;
   float pi = -3.14;
   float add = 0.01;
 
@@ -195,16 +196,13 @@ void Viewer::launch() {
     ratio = frameWidth / (float)frameHeight;
     glViewport(0, 0, frameWidth, frameHeight);
 
-
-    int id = 100;
-    Eigen::Vector3f position = mesh.V.col(100);
     pi += add;
     if (std::abs(pi) > M_PI_2) {
       add *= -1.0;
       pi += add;
     }
-    position = position + Eigen::Vector3f(0, 0, std::sin(pi));
-    arap.setConstraint(id, position);
+    Eigen::Vector3f position = mesh.V.col(id);
+    arap.setConstraint(id, position + Eigen::Vector3f(0, 0, std::sin(pi)));
     arap.deform(mesh.V);
 
     computeCameraMatries();

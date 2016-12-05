@@ -10,10 +10,8 @@ class Mesh {
 public:
   void set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_);
   void computeNormals();
-  // void computeAdjacencyMatrix();
-  // void computeEdgeLength();
   void computeWeightMatrix();
-  // void computeLaplacianMatrix();
+  void computeAdjacencyMatrix();
 
   Eigen::MatrixXf V;
   Eigen::MatrixXi F;
@@ -21,13 +19,8 @@ public:
   Eigen::MatrixXf N;
 
   Eigen::SparseMatrix<float> W;
-
-  // Eigen::MatrixXf E;
-  // Eigen::MatrixXf W;
-
-  // Eigen::SparseMatrix<float> L;
-  // Eigen::SparseMatrix<int> A;
-  // std::vector<std::vector<int> > adjList;
+  Eigen::SparseMatrix<int> A;
+  std::vector<std::vector<int> > adjList;
 
 };
 

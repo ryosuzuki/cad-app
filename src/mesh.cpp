@@ -6,10 +6,7 @@ void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
   V = V_;
   F = F_;
   computeNormals();
-  // computeAdjacencyMatrix();
-  // computeEdgeLength();
-  // computeWeightMatrix();
-  // computeLaplacianMatrix();
+  computeAdjacencyMatrix();
   computeWeightMatrix();
 }
 
@@ -60,11 +57,12 @@ void Mesh::computeNormals() {
 }
 
 void Mesh::computeWeightMatrix() {
+  std::cout << "Computing weight matrix.. ";
+
   typedef Eigen::Triplet<float> T;
   std::vector<T> w_ij;
   w_ij.reserve(F.cols() * 3);
 
-  // For each face
   for (int i=0; i<F.cols(); i++) {
     int a = F(0, i);
     int b = F(1, i);
@@ -96,6 +94,10 @@ void Mesh::computeWeightMatrix() {
     float cot_b = (lc*lc + la*la - lb*lb) * denom;
     float cot_c = (la*la + lb*lb - lc*lc) * denom;
 
+    cot_a = std::max<float>(float(1e-10), cot_a);
+    cot_b = std::max<float>(float(1e-10), cot_b);
+    cot_c = std::max<float>(float(1e-10), cot_c);
+
     w_ij.push_back(T(a, b, 0.5*cot_c));
     w_ij.push_back(T(b, a, 0.5*cot_c));
 
@@ -110,78 +112,7 @@ void Mesh::computeWeightMatrix() {
   W.reserve(Eigen::VectorXi::Constant(V.cols(), 7));
   W.setZero();
   W.setFromTriplets(w_ij.begin(), w_ij.end());
-}
 
-
-
-
-
-
-
-/*
-
-void Mesh::computeEdgeLength() {
-  std::cout << "Computing edge lengths .. ";
-
-  E.resize(3, F.cols());
-  for (int i = 0; i < F.cols(); i++) {
-    int a = F(0, i);
-    int b = F(1, i);
-    int c = F(2, i);
-    E(0, i) = (V.col(b) - V.col(c)).norm();
-    E(1, i) = (V.col(c) - V.col(a)).norm();
-    E(2, i) = (V.col(a) - V.col(b)).norm();
-  }
-  std::cout << "done." << std::endl;
-}
-
-void Mesh::computeWeightMatrix() {
-  std::cout << "Computing weight matrix .. ";
-
-  W.resize(3, F.cols());
-  for (int i = 0; i < F.cols(); i++) {
-    float la = E(0, i);
-    float lb = E(1, i);
-    float lc = E(2, i);
-
-    // Heron's formula
-    float arg =
-      (la + (lb + lc)) *
-      (lc - (la - lb)) *
-      (lc + (la - lb)) *
-      (la + (lb - lc));
-    float area = 0.25 * sqrt(arg);
-    float denom = 1.0 / (4.0 * area);
-    // Cotangent weight matrix
-    W(0, i) = 0.5 * (lb * lb + lc * lc - la * la) / denom;
-    W(1, i) = 0.5 * (lc * lc + la * la - lb * lb) / denom;
-    W(2, i) = 0.5 * (la * la + lb * lb - lc * lc) / denom;
-  }
-
-  std::cout << "done." << std::endl;
-}
-
-void Mesh::computeLaplacianMatrix() {
-  std::cout << "Computing Laplacian matrix .. ";
-
-  typedef Eigen::Triplet<int> T;
-  std::vector<T> l_ij;
-  l_ij.reserve(F.cols() * 3);
-
-  L.resize(V.cols(), V.cols());
-  L.reserve(10 * V.rows());
-
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < F.cols(); j++) {
-      int source = F((i + 1) % 3, j);
-      int dest   = F((i + 2) % 3, j);
-      l_ij.push_back(T(source, dest, W(i, j)));
-      l_ij.push_back(T(dest, source, W(i, j)));
-      l_ij.push_back(T(source, source, -W(i, j)));
-      l_ij.push_back(T(dest, dest, -W(i, j)));
-    }
-  }
-  L.setFromTriplets(l_ij.begin(), l_ij.end());
   std::cout << "done." << std::endl;
 }
 
@@ -229,7 +160,6 @@ void Mesh::computeAdjacencyMatrix() {
   std::cout << "done." << std::endl;
 }
 
-*/
 
 
 

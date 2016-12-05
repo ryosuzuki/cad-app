@@ -12,7 +12,7 @@ void ARAP::setConstraint(int id, const Eigen::Vector3f &position) {
 }
 
 void ARAP::deform(Eigen::MatrixXf &U) {
-  Vprime = V;
+  Vprime = U;
   init();
 
   int iter = 0;
@@ -39,12 +39,12 @@ void ARAP::initRotations() {
 void ARAP::initConstraints() {
   freeIdxMap.resize(V.cols());
   freeIdx = 0;
-  for (int i=0; i<V.cols(); i++) {
+  for (int i=0; i<V.cols(); ++i) {
     int idx = constraints.find(i) != constraints.end() ? -1 : freeIdx++;
     freeIdxMap[i] = idx;
   }
 
-  for (auto i = constraints.begin(); i != constraints.end(); i++) {
+  for (auto i = constraints.begin(); i != constraints.end(); ++i) {
     Vprime.col(i->first) = i->second;
   }
 }
@@ -63,16 +63,17 @@ void ARAP::initLinearSystem() {
   std::vector<T> l_ij;
   l_ij.reserve(freeIdx * 7);
 
-  for (int i=0; i<W.outerSize(); ++i) {
-    int idx_i = freeIdxMap[i];
-    if (idx_i == -1) {
-      continue;
-    }
-
-    for(typename Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
-      int j = it.row();
+  for (int k=0; k<W.outerSize(); ++k) {
+    for(Eigen::SparseMatrix<float>::InnerIterator it(W, k); it; ++it) {
+      int i = it.row();
+      int j = it.col();
+      int idx_i = freeIdxMap[i];
       int idx_j = freeIdxMap[j];
       float w_ij = it.value();
+
+      if (idx_i == -1) {
+        continue;
+      }
 
       if (idx_j == -1) {
         bFixed.col(idx_i) += w_ij * constraints[j];
@@ -98,47 +99,47 @@ void ARAP::initLinearSystem() {
 
 
 void ARAP::estimateRotations() {
-  for (int i=0; i<W.outerSize(); i++) {
+  for (int k=0; k<W.outerSize(); ++k) {
     Eigen::MatrixXf cov;
     cov = Eigen::MatrixXf::Zero(3, 3);
 
-    for (Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
-      int j = it.row();
+    for (Eigen::SparseMatrix<float>::InnerIterator it(W, k); it; ++it) {
+      int i = it.row();
+      int j = it.col();
       float w_ij = it.value();
 
       Eigen::Vector3f p_i = V.col(i);
-      Eigen::Vector3f pp_i = Vprime.col(i);
       Eigen::Vector3f p_j = V.col(j);
+      Eigen::Vector3f pp_i = Vprime.col(i);
       Eigen::Vector3f pp_j = Vprime.col(j);
 
-      cov += w_ij * ((p_i - p_j)*(pp_i - pp_j).transpose());
+      cov += w_ij * (p_i - p_j) * ((pp_i - pp_j).transpose());
     }
 
     // Jacobian SVD (Singular Value Decomposition)
     Eigen::JacobiSVD<Eigen::MatrixXf> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
     Eigen::MatrixXf SV = svd.matrixV();
-    Eigen::MatrixXf SU = svd.matrixU();
+    Eigen::MatrixXf SU = svd.matrixU().transpose();
     Eigen::MatrixXf I = Eigen::MatrixXf::Identity(3, 3);
-    I(2, 2) = (SV * SU.transpose()).determinant();
-
-    // Rotation matrix for vertex i
-    R[i] = (SV * I * SU.transpose());
+    I(2, 2) = (SV * SU).determinant();
+    // Rotation matrix for vertex k
+    R[k] = (SV * I * SU);
   }
 }
 
 void ARAP::estimatePositions() {
   b = bFixed;
 
-  for (int i=0; i<W.outerSize(); ++i) {
-    int idx_i = freeIdxMap[i];
-    if (idx_i == -1) {
-      continue;
-    }
+  for (int k=0; k<W.outerSize(); ++k) {
+    for(Eigen::SparseMatrix<float>::InnerIterator it(W, k); it; ++it) {
+      int i = it.row();
+      int j = it.col();
+      int idx_i = freeIdxMap[i];
+      if (idx_i == -1) {
+        continue;
+      }
 
-    for(Eigen::SparseMatrix<float>::InnerIterator it(W, i); it; ++it) {
-      int j = it.row();
       float w_ij = it.value();
-
       Eigen::MatrixXf r = R[i] + R[j];
       Eigen::Vector3f p_i = V.col(i);
       Eigen::Vector3f p_j = V.col(j);
@@ -151,7 +152,6 @@ void ARAP::estimatePositions() {
   Eigen::Matrix<float, Eigen::Dynamic, 1> LU;
   for (int i=0; i<3; ++i) {
     LU = solver.solve(b.row(i).transpose());
-
     int idx = 0;
     for (int j=0; j < freeIdx; ++j) {
       if (freeIdxMap[j] != -1) {
