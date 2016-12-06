@@ -17,7 +17,7 @@ Eigen::Vector3f Control::project(const Eigen::Vector3f &obj, const Eigen::Matrix
 
 Eigen::Vector3f Control::unproject(const Eigen::Vector3f &win, const Eigen::Matrix4f &model, const Eigen::Matrix4f &proj, const Eigen::Matrix4f &view, const Eigen::Vector4f &viewport) {
 
-  Eigen::Matrix4f Inverse = (proj * model).inverse();
+  Eigen::Matrix4f Inverse = (proj * view * model).inverse();
 
   Eigen::Vector4f tmp;
   tmp << win, 1;

@@ -9,7 +9,8 @@
 class Ray {
 public:
 
-  void init(const Mesh &mesh, const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_);
+  void init(const Mesh &mesh);
+  void set(const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_);
   bool intersect(int &faceId, float &t, Eigen::Vector2f *uv);
   bool intersectAABB(const AABB &aabb);
   bool intersectFace(int faceId, float &t, Eigen::Vector2f &uv);

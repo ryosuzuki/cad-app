@@ -1,12 +1,14 @@
 
 #include "ray.h"
 
-void Ray::init(const Mesh &mesh, const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_) {
+void Ray::init(const Mesh &mesh) {
   V = mesh.V;
   F = mesh.F;
   N = mesh.N;
   nodes = mesh.nodes;
+}
 
+void Ray::set(const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_) {
   origin = origin_;
   direction = direction_;
 
@@ -27,6 +29,10 @@ bool Ray::intersect(int &faceId, float &t, Eigen::Vector2f *uv) {
 
   while (true) {
     const BVHNode &node = nodes[nodeId];
+
+    // std::cout << node.leaf.startId;
+    // std::cout << ", ";
+    // std::cout << node.leaf.endId << std::endl;
 
     if (!intersectAABB(node.aabb)) {
       if (stackId == 0) {

@@ -1,5 +1,4 @@
 
-
 #include "mesh.h"
 
 void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
@@ -8,9 +7,12 @@ void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
   C.resize(4, V.cols());
   C.setZero();
   computeNormals();
+
+  /* Pre-computation for mesh deformation */
   computeAdjacencyMatrix();
   computeWeightMatrix();
 
+  /* Pre-computation for fast ray tracing */
   computeBoundingBox();
   computeBoundingVolumeHierarchy();
 }
@@ -169,9 +171,11 @@ void Mesh::computeAdjacencyMatrix() {
   std::cout << "done." << std::endl;
 }
 
-void Mesh::computeBoundingBox() {
-  aabb.clear();
 
+void Mesh::computeBoundingBox() {
+  std::cout << "Computing bounding box.. ";
+
+  boundingBox.clear();
   for (int f = 0; f < F.cols(); ++f) {
     Eigen::Vector3f v[3] = { V.col(F(0, f)), V.col(F(1, f)), V.col(F(2, f)) };
     Eigen::Vector3f faceCenter = Eigen::Vector3f::Zero();
@@ -181,7 +185,7 @@ void Mesh::computeBoundingBox() {
       float edgeLength = (v[i] - v[i == 2 ? 0 : (i + 1)]).norm();
       averageEdgeLength += edgeLength;
       maximumEdgeLength = std::max(maximumEdgeLength, (float) edgeLength);
-      aabb.expandBy(v[i]);
+      boundingBox.expandBy(v[i]);
       faceCenter += v[i];
     }
     faceCenter *= 1.0f / 3.0f;
@@ -189,12 +193,17 @@ void Mesh::computeBoundingBox() {
     surfaceArea += faceArea;
     weightedCenter += faceArea * faceCenter;
   }
+  std::cout << "done." << std::endl;
+  std::cout << boundingBox.min << std::endl;
+  std::cout << boundingBox.max << std::endl;
 }
 
 void Mesh::computeBoundingVolumeHierarchy() {
+  std::cout << "Computing bounding volume hierarchy.. ";
+
   nodes.resize(2 * F.cols());
   memset(nodes.data(), 0, sizeof(BVHNode) * nodes.size());
-  nodes[0].aabb = aabb;
+  nodes[0].aabb = boundingBox;
 
   int nodeId = 0;
   int *indices = new int[F.cols()];
@@ -202,6 +211,7 @@ void Mesh::computeBoundingVolumeHierarchy() {
     indices[i] = i;
   }
   constructNodes(nodeId, indices, indices, indices + F.cols());
+  std::cout << "done." << std::endl;
 }
 
 void Mesh::constructNodes(int nodeId, int *indices, int *startId, int *endId) {
@@ -262,7 +272,10 @@ void Mesh::constructNodes(int nodeId, int *indices, int *startId, int *endId) {
     node.leaf.flag = true;
     node.leaf.size = size;
     node.leaf.startId = startId - indices;
-    node.leaf.endId = size - node.leaf.startId;
+    node.leaf.endId = node.leaf.startId + size;
+
+    // std::cout << node.leaf.endId << std::endl;
+
     return;
   }
 
@@ -282,9 +295,4 @@ void Mesh::constructNodes(int nodeId, int *indices, int *startId, int *endId) {
   constructNodes(leftNodeId, indices, startId, startId + leftCount);
   constructNodes(rightNodeId, indices, startId + leftCount, endId);
 };
-
-
-
-
-
 

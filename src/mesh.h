@@ -32,7 +32,7 @@ public:
   std::vector<std::vector<int> > adjList;
   std::vector<BVHNode> nodes;
 
-  AABB aabb;
+  AABB boundingBox;
   float surfaceArea;
   Eigen::Vector3f weightedCenter;
 };

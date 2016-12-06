@@ -5,6 +5,7 @@ nanogui::Screen *screen = nullptr;
 GLFWwindow *window;
 Control control;
 Loader loader;
+Ray ray;
 ARAP arap;
 
 
@@ -48,6 +49,8 @@ float mouseDownX;
 float mouseDownY;
 float mouseDownZ;
 Eigen::Quaternionf mouseDownRotation;
+
+int currentFaceId = -1;
 
 void Viewer::init() {
 
@@ -119,6 +122,8 @@ void Viewer::load(std::string filename) {
   Eigen::MatrixXi F;
   loader.loadObj(filename, V, F);
   mesh.set(V, F);
+
+  ray.init(mesh);
 
   std::cout << "done." << std::endl;
 }
@@ -210,10 +215,19 @@ void Viewer::launch() {
     }
     Eigen::Vector3f position = mesh.V.col(id);
     arap.setConstraint(id, position + Eigen::Vector3f(0, 0, std::sin(pi)));
-    arap.deform(mesh.V);
+    // arap.deform(mesh.V);
 
     computeCameraMatries();
     drawMesh();
+
+    if (currentFaceId != -1) {
+      int a = mesh.F(0, currentFaceId);
+      int b = mesh.F(0, currentFaceId);
+      int c = mesh.F(0, currentFaceId);
+      mesh.setColor(a, Eigen::Vector4f(0.0, 1.0, 1.0, 1.0));
+      mesh.setColor(b, Eigen::Vector4f(0.0, 1.0, 1.0, 1.0));
+      mesh.setColor(c, Eigen::Vector4f(0.0, 1.0, 1.0, 1.0));
+    }
 
     screen->drawContents();
     screen->drawWidgets();
@@ -314,6 +328,26 @@ void Viewer::initCallbacks() {
     if (mouseDown) {
       Eigen::Quaternionf diffRotation = control.motion(width, height, mouseX, mouseY, mouseDownX, mouseDownY, speed);
       arcballQuat = diffRotation * mouseDownRotation;
+    }
+
+    Eigen::Vector3f p0 = { currentMouseX, height - currentMouseY, 0.0f };
+    Eigen::Vector3f p1 = { currentMouseX, height - currentMouseY, 1.0f };
+    Eigen::Vector3f pos0 = control.unproject(p0, modelMatrix, viewMatrix, projMatrix, viewport);
+    Eigen::Vector3f pos1 = control.unproject(p1, modelMatrix, viewMatrix, projMatrix, viewport);
+    ray.set(pos0, (pos1 - pos0).normalized());
+
+    currentFaceId;
+    float time;
+    Eigen::Vector2f uv;
+    bool hit = ray.intersect(currentFaceId, time, &uv);
+    if (hit) {
+      std::cout << currentFaceId;
+      std::cout << ", ";
+      std::cout << time << std::endl;
+    } else {
+      currentFaceId = -1;
+      // std::cout << "x";
+      // std::cout.flush();
     }
 
   });
