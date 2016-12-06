@@ -325,7 +325,7 @@ void Viewer::initCallbacks() {
         if (selectVertexId == -1) {
           return;
         }
-        float zval = control.project(mesh.weightedCenter.cast<float>(), modelMatrix, viewMatrix, projMatrix, viewport).z();
+        float zval = control.project(mesh.weightedCenter, modelMatrix, viewMatrix, projMatrix, viewport).z();
         Eigen::Vector3f mouse = { currentMouseX, height - currentMouseY, zval };
         Eigen::Vector3f position = control.unproject(mouse, modelMatrix, viewMatrix, projMatrix, viewport);
 

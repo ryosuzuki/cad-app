@@ -18,7 +18,7 @@ out vec4 outColor;
 
 void main() {
   if (fixed_color.a != 0.0) {
-    outColor = fixed_color;
+    outColor = vec4(fixed_color.rgb * (1-frag.color.a) + frag.color.rgb * frag.color.a, 1.0);
     return;
   }
 
