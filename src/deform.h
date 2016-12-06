@@ -9,11 +9,11 @@
 
 #include "mesh.h"
 
-class ARAP {
+class Deform {
 public:
 
   void set(const Mesh &mesh);
-  void deform(Eigen::MatrixXf &U);
+  void solve(Eigen::MatrixXf &U);
   void setConstraint(int id, const Eigen::Vector3f &position);
   void init();
   void initRotations();

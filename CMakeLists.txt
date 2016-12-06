@@ -51,7 +51,7 @@ add_executable(cad-app
   src/shader.h src/shader.cpp
   src/control.h src/control.cpp
   src/loader.h src/loader.cpp
-  src/arap.h src/arap.cpp
+  src/deform.h src/deform.cpp
   src/aabb.h src/aabb.cpp
 )
 

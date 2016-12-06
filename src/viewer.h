@@ -12,7 +12,7 @@
 #include "control.h"
 #include "loader.h"
 #include "ray.h"
-#include "arap.h"
+#include "deform.h"
 
 class Viewer {
 public:
@@ -29,9 +29,6 @@ public:
   void save();
   void debug();
   void computeCameraMatries();
-
-  GLShader shaderMesh;
-  GLShader shaderWireframe;
 
 };
 

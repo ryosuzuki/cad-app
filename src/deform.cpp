@@ -1,17 +1,17 @@
 
-#include "arap.h"
+#include "deform.h"
 
-void ARAP::set(const Mesh &mesh) {
+void Deform::set(const Mesh &mesh) {
   V = mesh.V;
   F = mesh.F;
   W = mesh.W;
 }
 
-void ARAP::setConstraint(int id, const Eigen::Vector3f &position) {
+void Deform::setConstraint(int id, const Eigen::Vector3f &position) {
   constraints[id] = position;
 }
 
-void ARAP::deform(Eigen::MatrixXf &U) {
+void Deform::solve(Eigen::MatrixXf &U) {
   Vprime = U;
   init();
 
@@ -25,18 +25,18 @@ void ARAP::deform(Eigen::MatrixXf &U) {
   U = Vprime;
 }
 
-void ARAP::init() {
+void Deform::init() {
   initRotations();
   initConstraints();
   initLinearSystem();
 }
 
-void ARAP::initRotations() {
+void Deform::initRotations() {
   R.clear();
   R.resize(V.cols(), Eigen::MatrixXf::Identity(3, 3));
 }
 
-void ARAP::initConstraints() {
+void Deform::initConstraints() {
   freeIdxMap.resize(V.cols());
   freeIdx = 0;
   for (int i=0; i<V.cols(); ++i) {
@@ -49,7 +49,7 @@ void ARAP::initConstraints() {
   }
 }
 
-void ARAP::initLinearSystem() {
+void Deform::initLinearSystem() {
   L.resize(freeIdx, freeIdx);
   L.reserve(Eigen::VectorXi::Constant(freeIdx, 7));
   L.setZero();
@@ -99,7 +99,7 @@ void ARAP::initLinearSystem() {
 }
 
 
-void ARAP::estimateRotations() {
+void Deform::estimateRotations() {
   for (int k=0; k<W.outerSize(); ++k) {
     Eigen::MatrixXf cov;
     cov = Eigen::MatrixXf::Zero(3, 3);
@@ -129,7 +129,7 @@ void ARAP::estimateRotations() {
   }
 }
 
-void ARAP::estimatePositions() {
+void Deform::estimatePositions() {
   b = bFixed;
 
   for (int k=0; k<W.outerSize(); ++k) {

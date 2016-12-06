@@ -55,7 +55,19 @@ static GLuint createShader_helper(GLint type, const std::string &name, const std
   return id;
 }
 
-bool GLShader::initFromFiles(const std::string &name, const std::string &vertex_fname, const std::string &fragment_fname, const std::string &geometry_fname) {
+void Shader::set(const std::string &name) {
+  std::cout << "Compiling shaders .. ";
+  std::cout.flush();
+
+  std::string vert = "../src/" + name + ".vert";
+  std::string frag = "../src/" + name + ".frag";
+  std::string geom = "../src/" + name + ".geom";
+  initFromFiles(name, vert, frag, geom);
+
+  std::cout << "done." << std::endl;
+}
+
+bool Shader::initFromFiles(const std::string &name, const std::string &vertex_fname, const std::string &fragment_fname, const std::string &geometry_fname) {
   auto file_to_string = [](const std::string & filename) -> std::string {
     if (filename.empty()) {
       return "";
@@ -68,7 +80,7 @@ bool GLShader::initFromFiles(const std::string &name, const std::string &vertex_
   return init(name, file_to_string(vertex_fname), file_to_string(fragment_fname), file_to_string(geometry_fname));
 }
 
-bool GLShader::init(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str) {
+bool Shader::init(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str) {
   std::string defines;
   for (auto def : mDefinitions) {
     defines += std::string("#define ") + def.first + std::string(" ") + def.second + "\n";
@@ -115,12 +127,12 @@ bool GLShader::init(const std::string &name, const std::string &vertex_str, cons
   return true;
 }
 
-void GLShader::bind() {
+void Shader::bind() {
   glUseProgram(mProgramShader);
   glBindVertexArray(mVertexArrayObject);
 }
 
-GLint GLShader::attrib(const std::string &name, bool warn) const {
+GLint Shader::attrib(const std::string &name, bool warn) const {
   GLint id = glGetAttribLocation(mProgramShader, name.c_str());
   if (id == -1 && warn) {
     std::cerr << mName << ": warning: did not find attrib " << name << std::endl;
@@ -128,7 +140,7 @@ GLint GLShader::attrib(const std::string &name, bool warn) const {
   return id;
 }
 
-void GLShader::setUniform(const std::string &name, const GLUniformBuffer &buf, bool warn) {
+void Shader::setUniform(const std::string &name, const GLUniformBuffer &buf, bool warn) {
   GLuint blockIndex = glGetUniformBlockIndex(mProgramShader, name.c_str());
   if (blockIndex == GL_INVALID_INDEX) {
     if (warn) {
@@ -139,7 +151,7 @@ void GLShader::setUniform(const std::string &name, const GLUniformBuffer &buf, b
   glUniformBlockBinding(mProgramShader, blockIndex, buf.getBindingPoint());
 }
 
-GLint GLShader::uniform(const std::string &name, bool warn) const {
+GLint Shader::uniform(const std::string &name, bool warn) const {
   GLint id = glGetUniformLocation(mProgramShader, name.c_str());
   if (id == -1 && warn) {
     // std::cerr << mName << ": warning: did not find uniform " << name << std::endl;
@@ -147,7 +159,7 @@ GLint GLShader::uniform(const std::string &name, bool warn) const {
   return id;
 }
 
-void GLShader::uploadAttrib(const std::string &name, size_t size, int dim, uint32_t compSize, GLuint glType, bool integral, const void *data, int version) {
+void Shader::uploadAttrib(const std::string &name, size_t size, int dim, uint32_t compSize, GLuint glType, bool integral, const void *data, int version) {
   int attribID = 0;
   if (name != "indices") {
     attribID = attrib(name);
@@ -191,7 +203,7 @@ void GLShader::uploadAttrib(const std::string &name, size_t size, int dim, uint3
   }
 }
 
-void GLShader::downloadAttrib(const std::string &name, size_t size, int /* dim */, uint32_t compSize, GLuint /* glType */, void *data) {
+void Shader::downloadAttrib(const std::string &name, size_t size, int /* dim */, uint32_t compSize, GLuint /* glType */, void *data) {
   auto it = mBufferObjects.find(name);
   if (it == mBufferObjects.end())
     throw std::runtime_error("downloadAttrib(" + mName + ", " + name + ") : buffer not found!");
@@ -211,7 +223,7 @@ void GLShader::downloadAttrib(const std::string &name, size_t size, int /* dim *
   }
 }
 
-void GLShader::shareAttrib(const GLShader &otherShader, const std::string &name, const std::string &_as) {
+void Shader::shareAttrib(const Shader &otherShader, const std::string &name, const std::string &_as) {
   std::string as = _as.length() == 0 ? name : _as;
   auto it = otherShader.mBufferObjects.find(name);
   if (it == otherShader.mBufferObjects.end())
@@ -230,12 +242,12 @@ void GLShader::shareAttrib(const GLShader &otherShader, const std::string &name,
   }
 }
 
-void GLShader::invalidateAttribs() {
+void Shader::invalidateAttribs() {
   for (auto &buffer : mBufferObjects)
     buffer.second.version = -1;
 }
 
-void GLShader::freeAttrib(const std::string &name) {
+void Shader::freeAttrib(const std::string &name) {
   auto it = mBufferObjects.find(name);
   if (it != mBufferObjects.end()) {
     glDeleteBuffers(1, &it->second.id);
@@ -243,7 +255,7 @@ void GLShader::freeAttrib(const std::string &name) {
   }
 }
 
-void GLShader::drawIndexed(int type, uint32_t offset_, uint32_t count_) {
+void Shader::drawIndexed(int type, uint32_t offset_, uint32_t count_) {
   if (count_ == 0)
     return;
   size_t offset = offset_;
@@ -258,14 +270,14 @@ void GLShader::drawIndexed(int type, uint32_t offset_, uint32_t count_) {
                  (const void *)(offset * sizeof(uint32_t)));
 }
 
-void GLShader::drawArray(int type, uint32_t offset, uint32_t count) {
+void Shader::drawArray(int type, uint32_t offset, uint32_t count) {
   if (count == 0)
     return;
 
   glDrawArrays(type, offset, count);
 }
 
-void GLShader::free() {
+void Shader::free() {
   for (auto &buf : mBufferObjects)
     glDeleteBuffers(1, &buf.second.id);
   mBufferObjects.clear();

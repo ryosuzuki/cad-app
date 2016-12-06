@@ -7,39 +7,49 @@
 
 class Control {
 public:
-  Eigen::Vector3f project(const Eigen::Vector3f &obj,
-                          const Eigen::Matrix4f &model,
-                          const Eigen::Matrix4f &view,
-                          const Eigen::Matrix4f &proj,
-                          const Eigen::Vector4f &viewport);
 
-  Eigen::Vector3f unproject(const Eigen::Vector3f &win,
-                            const Eigen::Matrix4f &model,
-                            const Eigen::Matrix4f &view,
-                            const Eigen::Matrix4f &proj,
-                            const Eigen::Vector4f &viewport);
-
+  void init(const Eigen::Vector4f &viewport);
+  void computeCameraMatries();
+  void zoom(float delta);
+  void updateRotation(float mouseX, float mouseY,
+                      float mouseDownX, float mouseDownY,
+                      float speed,
+                      const Eigen::Quaternionf &mouseDownRotation);
+  Eigen::Vector3f project(const Eigen::Vector3f &obj);
+  Eigen::Vector3f unproject(const Eigen::Vector3f &win);
   Eigen::Matrix4f lookAt(const Eigen::Vector3f &origin,
                          const Eigen::Vector3f &target,
                          const Eigen::Vector3f &up);
-
   Eigen::Matrix4f ortho(float left, float right,
                         float bottom, float top,
                         float nearVal, float farVal);
-
   Eigen::Matrix4f frustum(float left, float right,
                           float bottom, float top,
                           float nearVal, float farVal);
-
   Eigen::Matrix4f scale(const Eigen::Vector3f &v);
-
   Eigen::Matrix4f translate(const Eigen::Vector3f &v);
-
   Eigen::Matrix4f quatToMatrix(const Eigen::Quaternionf &quat);
+  Eigen::Quaternionf getRotation();
 
-  Eigen::Quaternionf motion(float width, float height,
-                            float mouseX, float mouseY,
-                            float mouseDownX, float mouseDownY,
-                            float speed);
+  float width;
+  float height;
+
+  bool orthographic;
+  float cameraViewAngle;
+  float cameraNear;
+  float cameraFar;
+  float cameraZoom;
+  float modelZoom;
+
+  Eigen::Matrix4f model;
+  Eigen::Matrix4f view;
+  Eigen::Matrix4f proj;
+
+  Eigen::Vector3f cameraEye;
+  Eigen::Vector3f cameraCenter;
+  Eigen::Vector3f cameraUp;
+  Eigen::Vector3f modelTranslation;
+  Eigen::Vector3f cameraLocal;
+  Eigen::Quaternionf arcballQuat;
 
 };

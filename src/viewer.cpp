@@ -8,41 +8,23 @@ Mesh mesh;
 Control control;
 Loader loader;
 Ray ray;
-ARAP arap;
-
+Deform deform;
+Shader shaderMesh;
 
 float width = 800;
 float height = 800;
 
 bool mouseDown = false;
-bool orthographic = false;
 bool wireframe = false;
-float cameraViewAngle = 45.0;
-float cameraNear = 1.0;
-float cameraFar = 100.0;
 float lineWidth = 0.5f;
-float cameraZoom = 3.0f;
-float modelZoom = 3.0f;
-
 bool deformation = false;
 // std::string mouseMode = "ROTATION";
 
-Eigen::Matrix4f viewMatrix = Eigen::Matrix4f::Identity();
-Eigen::Matrix4f projMatrix = Eigen::Matrix4f::Identity();
-Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
-Eigen::Quaternionf arcballQuat = Eigen::Quaternionf::Identity();
-
 Eigen::Vector3f center(0, 1, 0);
 Eigen::Vector4f lineColor(1.0f, 1.0f, 1.0f, 1.0f);
-Eigen::Vector3f cameraEye(0, 0, 5);
-Eigen::Vector3f cameraCenter(0, 1, 0);
-Eigen::Vector3f cameraUp(0, 1, 0);
-Eigen::Vector3f modelTranslation(0, 0, 0);
 Eigen::Vector4f viewport(0, 0, 800, 800);
 
 Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
-Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
-Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
 Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
 Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 Eigen::Vector4f selectColor(1.0f, 0.0f, 1.0f, 1.0f);
@@ -97,29 +79,14 @@ void Viewer::init() {
   nanogui::ref<nanogui::Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Main Menu");
   gui->addGroup("Workspace");
   gui->addButton("Load", [&]() { load(); });
-  // gui->addButton("Save", [&]() { this->save(); });
   gui->addVariable("Wireframe", wireframe);
-
   gui->addVariable("Deformation", deformation);
-
 
   screen->setVisible(true);
   screen->performLayout();
 
 }
 
-void Viewer::initShaders() {
-  std::cout << "Compiling shaders .. ";
-  std::cout.flush();
-  shaderMesh.initFromFiles("shader_mesh",
-                           "../src/shader_mesh.vert",
-                           "../src/shader_mesh.frag",
-                           "../src/shader_mesh.geom");
-  shaderWireframe.initFromFiles("shader_wireframe",
-                                "../src/shader_wireframe.vert",
-                                "../src/shader_wireframe.frag");
-  std::cout << "done." << std::endl;
-}
 
 void Viewer::load(std::string filename) {
   std::cout << "Loading OBJ file .. ";
@@ -134,26 +101,22 @@ void Viewer::load(std::string filename) {
   Eigen::MatrixXi F;
   loader.loadObj(filename, V, F);
   mesh.set(V, F);
-
   ray.init(mesh);
 
   std::cout << "done." << std::endl;
 }
 
 void Viewer::drawMesh() {
-  Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
-  cameraLocal = Eigen::Vector3f(civ.head(3));
-
   shaderMesh.bind();
   shaderMesh.uploadIndices(mesh.F);
   shaderMesh.uploadAttrib("position", mesh.V);
   shaderMesh.uploadAttrib("normal", mesh.N);
   shaderMesh.uploadAttrib("color", mesh.C);
-  shaderMesh.setUniform("model", modelMatrix);
-  shaderMesh.setUniform("view", viewMatrix);
-  shaderMesh.setUniform("proj", projMatrix);
+  shaderMesh.setUniform("model", control.model);
+  shaderMesh.setUniform("view", control.view);
+  shaderMesh.setUniform("proj", control.proj);
+  shaderMesh.setUniform("camera_local", control.cameraLocal);
   shaderMesh.setUniform("light_position", lightPosition);
-  shaderMesh.setUniform("camera_local", cameraLocal);
   shaderMesh.setUniform("show_uvs", 0.0f);
   shaderMesh.setUniform("base_color", baseColor);
   shaderMesh.setUniform("specular_color", specularColor);
@@ -177,29 +140,15 @@ void Viewer::drawMesh() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void Viewer::drawWireframe() {
-  if (!wireframe) return;
-  shaderWireframe.bind();
-  shaderWireframe.uploadAttrib("position", mesh.V);
-
-  glEnable(GL_LINE_SMOOTH);
-  glLineWidth(1.0f);
-  shaderWireframe.bind();
-  shaderWireframe.uploadAttrib("position", mesh.V);
-  shaderWireframe.setUniform("color", baseColor);
-  shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
-  shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
-}
-
-
 void Viewer::launch() {
   init();
-  initShaders();
+  control.init(viewport);
+  shaderMesh.set("shader_mesh");
   initCallbacks();
-  load("../sphere.obj");
+  load("../bunny.obj");
 
-  arap.set(mesh);
-  arap.setConstraint(37, mesh.V.col(37));
+  deform.set(mesh);
+  deform.setConstraint(37, mesh.V.col(37));
 
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();
@@ -217,7 +166,7 @@ void Viewer::launch() {
     }
     mesh.setColor(37, Eigen::Vector4f(1.0, 0.0, 0.0, 1.0));
 
-    computeCameraMatries();
+    control.computeCameraMatries();
     drawMesh();
 
     screen->drawContents();
@@ -229,47 +178,6 @@ void Viewer::launch() {
   glfwTerminate();
 }
 
-
-void Viewer::save() {
-  std::cout << "save" << std::endl;
-}
-
-void Viewer::computeCameraMatries() {
-
-  modelMatrix = Eigen::Matrix4f::Identity();
-  viewMatrix = Eigen::Matrix4f::Identity();
-  projMatrix = Eigen::Matrix4f::Identity();
-
-  /* Set view parameters */
-  viewMatrix = control.lookAt(cameraEye, cameraCenter, cameraUp);
-
-  /* Set projection paramters */
-  if (orthographic) {
-    float length = (cameraEye - cameraCenter).norm();
-    float h = tan(cameraViewAngle / 360.0 * M_PI) * (length);
-    float left = -h * width / height;
-    float right = h * width / height;
-    float bottom = -h;
-    float top = h;
-    projMatrix = control.ortho(left, right, bottom, top, cameraNear, cameraFar);
-  } else {
-    float fH = tan(cameraViewAngle / 360.0 * M_PI) * cameraNear;
-    float fW = fH * width / height;
-    float left = -fW;
-    float right = fW;
-    float bottom = -fH;
-    float top = fH;
-    projMatrix = control.frustum(left, right, bottom, top, cameraNear, cameraFar);
-  }
-
-  /* Set model parameters */
-  modelMatrix = control.quatToMatrix(arcballQuat);
-  modelMatrix.topLeftCorner(3, 3) *= cameraZoom;
-  modelMatrix.topLeftCorner(3, 3) *= modelZoom;
-  modelMatrix.col(3).head(3) += modelMatrix.topLeftCorner(3, 3) * modelTranslation;
-
-  glfwPostEmptyEvent();
-}
 
 void Viewer::initCallbacks() {
   glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
@@ -293,12 +201,23 @@ void Viewer::initCallbacks() {
 
     if (action == GLFW_PRESS) {
       mouseDown = true;
-      Eigen::Vector3f coord = control.project(center, modelMatrix, viewMatrix, projMatrix, viewport);
+      Eigen::Vector3f coord = control.project(center);
 
       mouseDownX = currentMouseX;
       mouseDownY = currentMouseY;
       mouseDownZ = coord[2];
-      mouseDownRotation = arcballQuat.normalized();
+      mouseDownRotation = control.getRotation();
+
+      if (selectVertexId != -1) {
+        float zval = control.project(mesh.weightedCenter).z();
+        Eigen::Vector3f mouse = { currentMouseX, height - currentMouseY, zval };
+        Eigen::Vector3f position = control.unproject(mouse);
+        Eigen::Vector3f vertex = mesh.V.col(selectVertexId);
+
+        float distance = (vertex - position).norm() / (mesh.boundingBox.max - mesh.boundingBox.min).norm();
+        std::cout << distance << std::endl;
+      }
+
     } else {
       mouseDown = false;
     }
@@ -325,23 +244,22 @@ void Viewer::initCallbacks() {
         if (selectVertexId == -1) {
           return;
         }
-        float zval = control.project(mesh.weightedCenter, modelMatrix, viewMatrix, projMatrix, viewport).z();
+        float zval = control.project(mesh.weightedCenter).z();
         Eigen::Vector3f mouse = { currentMouseX, height - currentMouseY, zval };
-        Eigen::Vector3f position = control.unproject(mouse, modelMatrix, viewMatrix, projMatrix, viewport);
+        Eigen::Vector3f position = control.unproject(mouse);
 
-        arap.setConstraint(selectVertexId, position);
-        arap.deform(mesh.V);
+        deform.setConstraint(selectVertexId, position);
+        deform.solve(mesh.V);
       } else {
-        Eigen::Quaternionf diffRotation = control.motion(width, height, mouseX, mouseY, mouseDownX, mouseDownY, speed);
-        arcballQuat = diffRotation * mouseDownRotation;
+        control.updateRotation(mouseX, mouseY, mouseDownX, mouseDownY, speed, mouseDownRotation);
       }
 
     }
 
     Eigen::Vector3f p0 = { currentMouseX, height - currentMouseY, 0.0f };
     Eigen::Vector3f p1 = { currentMouseX, height - currentMouseY, 1.0f };
-    Eigen::Vector3f pos0 = control.unproject(p0, modelMatrix, viewMatrix, projMatrix, viewport);
-    Eigen::Vector3f pos1 = control.unproject(p1, modelMatrix, viewMatrix, projMatrix, viewport);
+    Eigen::Vector3f pos0 = control.unproject(p0);
+    Eigen::Vector3f pos1 = control.unproject(p1);
     ray.set(pos0, (pos1 - pos0).normalized());
 
     float minTime = std::numeric_limits<float>::infinity();
@@ -354,7 +272,7 @@ void Viewer::initCallbacks() {
         if (hit && time < minTime) {
           currentFaceId = i;
           minTime = time;
-          std::cout << uv << std::endl;
+          // std::cout << uv << std::endl;
         }
         if (i == mesh.F.cols()) {
           currentFaceId = -1;
@@ -377,14 +295,7 @@ void Viewer::initCallbacks() {
 
   glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {
     screen->scrollCallbackEvent(x, y);
-
-    float deltaY = y;
-    if (deltaY != 0) {
-      float mult = (1.0 + ((deltaY > 0) ? 1.0 : -1.0) * 0.05);
-      const float minZoom = 0.1f;
-      cameraZoom = (cameraZoom * mult > minZoom ? cameraZoom * mult : minZoom);
-    }
-
+    control.zoom(y);
   });
 
   glfwSetFramebufferSizeCallback(window, [](GLFWwindow *, int width, int height) {
@@ -395,3 +306,19 @@ void Viewer::initCallbacks() {
 
 
 
+
+/*
+void Viewer::drawWireframe() {
+  if (!wireframe) return;
+  shaderWireframe.bind();
+  shaderWireframe.uploadAttrib("position", mesh.V);
+
+  glEnable(GL_LINE_SMOOTH);
+  glLineWidth(1.0f);
+  shaderWireframe.bind();
+  shaderWireframe.uploadAttrib("position", mesh.V);
+  shaderWireframe.setUniform("color", baseColor);
+  shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
+  shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
+}
+*/

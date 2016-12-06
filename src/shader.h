@@ -58,16 +58,16 @@ protected:
 };
 
 
-class GLShader {
+class Shader {
 
 public:
   /// Create an unitialized OpenGL shader
-  GLShader()
+  Shader()
     : mVertexShader(0), mFragmentShader(0), mGeometryShader(0),
       mProgramShader(0), mVertexArrayObject(0) { }
 
+  void set(const std::string &name);
   bool init(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str = "");
-
   bool initFromFiles(const std::string &name, const std::string &vertex_fname, const std::string &fragment_fname, const std::string &geometry_fname = "");
 
   const std::string &name() const { return mName; }
@@ -119,7 +119,7 @@ public:
     return true;
   }
 
-  void shareAttrib(const GLShader &otherShader, const std::string &name, const std::string &as = "");
+  void shareAttrib(const Shader &otherShader, const std::string &name, const std::string &as = "");
 
   int attribVersion(const std::string &name) const {
     auto it = mBufferObjects.find(name);
