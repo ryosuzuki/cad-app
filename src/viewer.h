@@ -10,7 +10,6 @@
 #include "mesh.h"
 #include "shader.h"
 #include "control.h"
-#include "loader.h"
 #include "ray.h"
 #include "deform.h"
 

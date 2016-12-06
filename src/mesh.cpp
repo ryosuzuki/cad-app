@@ -1,9 +1,8 @@
 
 #include "mesh.h"
 
-void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
-  V = V_;
-  F = F_;
+void Mesh::init(const std::string &filename) {
+  loader.loadObj(filename, V, F);
   C.resize(4, V.cols());
   C.setZero();
   computeNormals();

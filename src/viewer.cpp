@@ -6,18 +6,17 @@ GLFWwindow *window;
 
 Mesh mesh;
 Control control;
-Loader loader;
 Ray ray;
 Deform deform;
-Shader shaderMesh;
+Shader shader;
 
 float width = 800;
 float height = 800;
 
 bool mouseDown = false;
 bool wireframe = false;
-float lineWidth = 0.5f;
 bool deformation = false;
+float lineWidth = 0.5f;
 // std::string mouseMode = "ROTATION";
 
 Eigen::Vector3f center(0, 1, 0);
@@ -89,37 +88,31 @@ void Viewer::init() {
 
 
 void Viewer::load(std::string filename) {
-  std::cout << "Loading OBJ file .. ";
-
   if (filename.empty()) {
     filename = nanogui::file_dialog({
       {"obj", "Wavefront OBJ"}
     }, false);
   }
 
-  Eigen::MatrixXf V;
-  Eigen::MatrixXi F;
-  loader.loadObj(filename, V, F);
-  mesh.set(V, F);
+  mesh.init(filename);
   ray.init(mesh);
-
-  std::cout << "done." << std::endl;
+  deform.init(mesh);
 }
 
 void Viewer::drawMesh() {
-  shaderMesh.bind();
-  shaderMesh.uploadIndices(mesh.F);
-  shaderMesh.uploadAttrib("position", mesh.V);
-  shaderMesh.uploadAttrib("normal", mesh.N);
-  shaderMesh.uploadAttrib("color", mesh.C);
-  shaderMesh.setUniform("model", control.model);
-  shaderMesh.setUniform("view", control.view);
-  shaderMesh.setUniform("proj", control.proj);
-  shaderMesh.setUniform("camera_local", control.cameraLocal);
-  shaderMesh.setUniform("light_position", lightPosition);
-  shaderMesh.setUniform("show_uvs", 0.0f);
-  shaderMesh.setUniform("base_color", baseColor);
-  shaderMesh.setUniform("specular_color", specularColor);
+  shader.bind();
+  shader.uploadIndices(mesh.F);
+  shader.uploadAttrib("position", mesh.V);
+  shader.uploadAttrib("normal", mesh.N);
+  shader.uploadAttrib("color", mesh.C);
+  shader.setUniform("model", control.model);
+  shader.setUniform("view", control.view);
+  shader.setUniform("proj", control.proj);
+  shader.setUniform("camera_local", control.cameraLocal);
+  shader.setUniform("light_position", lightPosition);
+  shader.setUniform("show_uvs", 0.0f);
+  shader.setUniform("base_color", baseColor);
+  shader.setUniform("specular_color", specularColor);
 
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);
@@ -128,26 +121,29 @@ void Viewer::drawMesh() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(lineWidth);
-    shaderMesh.setUniform("fixed_color", lineColor);
+    shader.setUniform("fixed_color", lineColor);
   } else {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
   }
-  shaderMesh.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
-  shaderMesh.setUniform("fixed_color", Eigen::Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
+  shader.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
+  shader.setUniform("fixed_color", Eigen::Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
   glDisable(GL_POLYGON_OFFSET_FILL);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Viewer::launch() {
-  init();
-  control.init(viewport);
-  shaderMesh.set("shader_mesh");
-  initCallbacks();
-  load("../bunny.obj");
+  std::string filename = "../bunny.obj";
 
-  deform.set(mesh);
+  init();
+  initCallbacks();
+
+  control.init(viewport);
+  shader.init("shader_mesh");
+  mesh.init(filename);
+  ray.init(mesh);
+  deform.init(mesh);
   deform.setConstraint(37, mesh.V.col(37));
 
   while (glfwWindowShouldClose(window) == 0) {
@@ -155,10 +151,8 @@ void Viewer::launch() {
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float ratio;
     int frameWidth, frameHeight;
     glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
-    ratio = frameWidth / (float)frameHeight;
     glViewport(0, 0, frameWidth, frameHeight);
 
     if (selectVertexId != -1) {
@@ -304,21 +298,3 @@ void Viewer::initCallbacks() {
 
 }
 
-
-
-
-/*
-void Viewer::drawWireframe() {
-  if (!wireframe) return;
-  shaderWireframe.bind();
-  shaderWireframe.uploadAttrib("position", mesh.V);
-
-  glEnable(GL_LINE_SMOOTH);
-  glLineWidth(1.0f);
-  shaderWireframe.bind();
-  shaderWireframe.uploadAttrib("position", mesh.V);
-  shaderWireframe.setUniform("color", baseColor);
-  shaderWireframe.setUniform("mvp", Eigen::Matrix4f(projMatrix * viewMatrix * modelMatrix));
-  shaderWireframe.drawIndexed(GL_LINES, 0, mesh.F.cols());
-}
-*/

@@ -1,10 +1,11 @@
 
 #include "deform.h"
 
-void Deform::set(const Mesh &mesh) {
+void Deform::init(const Mesh &mesh) {
   V = mesh.V;
   F = mesh.F;
   W = mesh.W;
+  constraints = {};
 }
 
 void Deform::setConstraint(int id, const Eigen::Vector3f &position) {
@@ -13,7 +14,9 @@ void Deform::setConstraint(int id, const Eigen::Vector3f &position) {
 
 void Deform::solve(Eigen::MatrixXf &U) {
   Vprime = U;
-  init();
+  initializeRotations();
+  initializeConstraints();
+  initializeLinearSystem();
 
   int iter = 0;
   int iterMax = 5;
@@ -25,18 +28,12 @@ void Deform::solve(Eigen::MatrixXf &U) {
   U = Vprime;
 }
 
-void Deform::init() {
-  initRotations();
-  initConstraints();
-  initLinearSystem();
-}
-
-void Deform::initRotations() {
+void Deform::initializeRotations() {
   R.clear();
   R.resize(V.cols(), Eigen::MatrixXf::Identity(3, 3));
 }
 
-void Deform::initConstraints() {
+void Deform::initializeConstraints() {
   freeIdxMap.resize(V.cols());
   freeIdx = 0;
   for (int i=0; i<V.cols(); ++i) {
@@ -49,7 +46,7 @@ void Deform::initConstraints() {
   }
 }
 
-void Deform::initLinearSystem() {
+void Deform::initializeLinearSystem() {
   L.resize(freeIdx, freeIdx);
   L.reserve(Eigen::VectorXi::Constant(freeIdx, 7));
   L.setZero();

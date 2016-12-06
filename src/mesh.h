@@ -6,13 +6,14 @@
 #include <Eigen/Geometry>
 #include <Eigen/Sparse>
 
+#include "loader.h"
 #include "aabb.h"
 
 struct BVHNode;
 
 class Mesh {
 public:
-  void set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_);
+  void init(const std::string &filename);
   void setColor(int id, const Eigen::Vector4f &color);
   void computeNormals();
   void computeWeightMatrix();
@@ -32,6 +33,7 @@ public:
   std::vector<std::vector<int> > adjList;
   std::vector<BVHNode> nodes;
 
+  Loader loader;
   AABB boundingBox;
   float surfaceArea;
   Eigen::Vector3f weightedCenter;

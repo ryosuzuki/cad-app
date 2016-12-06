@@ -12,13 +12,12 @@
 class Deform {
 public:
 
-  void set(const Mesh &mesh);
+  void init(const Mesh &mesh);
   void solve(Eigen::MatrixXf &U);
   void setConstraint(int id, const Eigen::Vector3f &position);
-  void init();
-  void initRotations();
-  void initConstraints();
-  void initLinearSystem();
+  void initializeRotations();
+  void initializeConstraints();
+  void initializeLinearSystem();
   void estimateRotations();
   void estimatePositions();
 

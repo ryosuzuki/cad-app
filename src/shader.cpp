@@ -55,7 +55,7 @@ static GLuint createShader_helper(GLint type, const std::string &name, const std
   return id;
 }
 
-void Shader::set(const std::string &name) {
+void Shader::init(const std::string &name) {
   std::cout << "Compiling shaders .. ";
   std::cout.flush();
 
@@ -77,10 +77,10 @@ bool Shader::initFromFiles(const std::string &name, const std::string &vertex_fn
     std::istreambuf_iterator<char>());
   };
 
-  return init(name, file_to_string(vertex_fname), file_to_string(fragment_fname), file_to_string(geometry_fname));
+  return initFromString(name, file_to_string(vertex_fname), file_to_string(fragment_fname), file_to_string(geometry_fname));
 }
 
-bool Shader::init(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str) {
+bool Shader::initFromString(const std::string &name, const std::string &vertex_str, const std::string &fragment_str, const std::string &geometry_str) {
   std::string defines;
   for (auto def : mDefinitions) {
     defines += std::string("#define ") + def.first + std::string(" ") + def.second + "\n";
