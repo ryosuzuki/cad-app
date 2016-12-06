@@ -1,7 +1,7 @@
 
 #include "control.h"
 
-Eigen::Vector3f Control::project(const Eigen::Vector3f &obj, const Eigen::Matrix4f &model, const Eigen::Matrix4f &proj, const Eigen::Matrix4f &view, const Eigen::Vector4f &viewport) {
+Eigen::Vector3f Control::project(const Eigen::Vector3f &obj, const Eigen::Matrix4f &model, const Eigen::Matrix4f &view, const Eigen::Matrix4f &proj, const Eigen::Vector4f &viewport) {
 
   Eigen::Vector4f tmp;
   tmp << obj, 1;
@@ -15,7 +15,7 @@ Eigen::Vector3f Control::project(const Eigen::Vector3f &obj, const Eigen::Matrix
   return tmp.head(3);
 }
 
-Eigen::Vector3f Control::unproject(const Eigen::Vector3f &win, const Eigen::Matrix4f &model, const Eigen::Matrix4f &proj, const Eigen::Matrix4f &view, const Eigen::Vector4f &viewport) {
+Eigen::Vector3f Control::unproject(const Eigen::Vector3f &win, const Eigen::Matrix4f &model, const Eigen::Matrix4f &view, const Eigen::Matrix4f &proj, const Eigen::Vector4f &viewport) {
 
   Eigen::Matrix4f Inverse = (proj * view * model).inverse();
 

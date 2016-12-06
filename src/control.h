@@ -9,14 +9,14 @@ class Control {
 public:
   Eigen::Vector3f project(const Eigen::Vector3f &obj,
                           const Eigen::Matrix4f &model,
-                          const Eigen::Matrix4f &proj,
                           const Eigen::Matrix4f &view,
+                          const Eigen::Matrix4f &proj,
                           const Eigen::Vector4f &viewport);
 
   Eigen::Vector3f unproject(const Eigen::Vector3f &win,
                             const Eigen::Matrix4f &model,
-                            const Eigen::Matrix4f &proj,
                             const Eigen::Matrix4f &view,
+                            const Eigen::Matrix4f &proj,
                             const Eigen::Vector4f &viewport);
 
   Eigen::Matrix4f lookAt(const Eigen::Vector3f &origin,

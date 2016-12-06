@@ -3,6 +3,8 @@
 
 nanogui::Screen *screen = nullptr;
 GLFWwindow *window;
+
+Mesh mesh;
 Control control;
 Loader loader;
 Ray ray;
@@ -184,7 +186,7 @@ void Viewer::launch() {
   init();
   initShaders();
   initCallbacks();
-  load("../sphere.obj");
+  load("../bunny.obj");
 
   arap.set(mesh);
   arap.setConstraint(37, mesh.V.col(37));
@@ -302,7 +304,7 @@ void Viewer::initCallbacks() {
 
     if (action == GLFW_PRESS) {
       mouseDown = true;
-      Eigen::Vector3f coord = control.project(center, modelMatrix, projMatrix, viewMatrix, viewport);
+      Eigen::Vector3f coord = control.project(center, modelMatrix, viewMatrix, projMatrix, viewport);
 
       mouseDownX = currentMouseX;
       mouseDownY = currentMouseY;
@@ -336,20 +338,20 @@ void Viewer::initCallbacks() {
     Eigen::Vector3f pos1 = control.unproject(p1, modelMatrix, viewMatrix, projMatrix, viewport);
     ray.set(pos0, (pos1 - pos0).normalized());
 
-    currentFaceId;
-    float time;
+    float minTime = std::numeric_limits<float>::infinity();
     Eigen::Vector2f uv;
-    bool hit = ray.intersect(currentFaceId, time, &uv);
-    if (hit) {
-      std::cout << currentFaceId;
-      std::cout << ", ";
-      std::cout << time << std::endl;
-    } else {
-      currentFaceId = -1;
-      // std::cout << "x";
-      // std::cout.flush();
-    }
 
+    for (int i = 0; i < mesh.F.cols(); ++i) {
+      float time;
+      bool hit = ray.intersectFace(i, time, uv);
+      if (hit && time < minTime) {
+        currentFaceId = i;
+        minTime = time;
+      }
+      if (i == mesh.F.cols()) {
+        currentFaceId = -1;
+      }
+    }
   });
 
   glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {

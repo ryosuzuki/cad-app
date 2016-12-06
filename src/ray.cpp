@@ -96,12 +96,9 @@ bool Ray::intersectAABB(const AABB &aabb) {
 }
 
 bool Ray::intersectFace(int faceId, float &t, Eigen::Vector2f &uv) {
-  int a = F(0, faceId);
-  int b = F(1, faceId);
-  int c = F(2, faceId);
-  Eigen::Vector3f va = V.col(a);
-  Eigen::Vector3f vb = V.col(b);
-  Eigen::Vector3f vc = V.col(c);
+  Eigen::Vector3f va = V.col(F(0, faceId));
+  Eigen::Vector3f vb = V.col(F(1, faceId));
+  Eigen::Vector3f vc = V.col(F(2, faceId));
 
   Eigen::Vector3f edge1 = vb - va;
   Eigen::Vector3f edge2 = vc - va;

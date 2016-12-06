@@ -30,7 +30,6 @@ public:
   void debug();
   void computeCameraMatries();
 
-  Mesh mesh;
   GLShader shaderMesh;
   GLShader shaderWireframe;
 
