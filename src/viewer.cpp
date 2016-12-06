@@ -24,6 +24,9 @@ float lineWidth = 0.5f;
 float cameraZoom = 3.0f;
 float modelZoom = 3.0f;
 
+bool deformation = false;
+// std::string mouseMode = "ROTATION";
+
 Eigen::Matrix4f viewMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f projMatrix = Eigen::Matrix4f::Identity();
 Eigen::Matrix4f modelMatrix = Eigen::Matrix4f::Identity();
@@ -42,6 +45,8 @@ Eigen::Vector4f civ = (viewMatrix * modelMatrix).inverse() * Eigen::Vector4f(0.0
 Eigen::Vector3f cameraLocal = Eigen::Vector3f(civ.head(3));
 Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
 Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
+Eigen::Vector4f selectColor(1.0f, 0.0f, 1.0f, 1.0f);
+Eigen::Vector4f unselectColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 Eigen::Matrix4f vertexColor;
 
@@ -52,6 +57,8 @@ float mouseDownY;
 float mouseDownZ;
 Eigen::Quaternionf mouseDownRotation;
 
+int currentVertexId = -1;
+int selectVertexId = -1;
 int currentFaceId = -1;
 
 void Viewer::init() {
@@ -92,6 +99,9 @@ void Viewer::init() {
   gui->addButton("Load", [&]() { load(); });
   // gui->addButton("Save", [&]() { this->save(); });
   gui->addVariable("Wireframe", wireframe);
+
+  gui->addVariable("Deformation", deformation);
+
 
   screen->setVisible(true);
   screen->performLayout();
@@ -186,18 +196,10 @@ void Viewer::launch() {
   init();
   initShaders();
   initCallbacks();
-  load("../bunny.obj");
+  load("../sphere.obj");
 
   arap.set(mesh);
   arap.setConstraint(37, mesh.V.col(37));
-
-  int id = 32;
-  float pi = -3.14;
-  float add = 0.01;
-
-
-  mesh.setColor(37, Eigen::Vector4f(1.0, 0.0, 0.0, 1.0));
-  mesh.setColor(32, Eigen::Vector4f(0.0, 1.0, 0.0, 1.0));
 
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();
@@ -210,26 +212,13 @@ void Viewer::launch() {
     ratio = frameWidth / (float)frameHeight;
     glViewport(0, 0, frameWidth, frameHeight);
 
-    pi += add;
-    if (std::abs(pi) > M_PI_2) {
-      add *= -1.0;
-      pi += add;
+    if (selectVertexId != -1) {
+      mesh.setColor(selectVertexId, selectColor);
     }
-    Eigen::Vector3f position = mesh.V.col(id);
-    arap.setConstraint(id, position + Eigen::Vector3f(0, 0, std::sin(pi)));
-    // arap.deform(mesh.V);
+    mesh.setColor(37, Eigen::Vector4f(1.0, 0.0, 0.0, 1.0));
 
     computeCameraMatries();
     drawMesh();
-
-    if (currentFaceId != -1) {
-      int a = mesh.F(0, currentFaceId);
-      int b = mesh.F(0, currentFaceId);
-      int c = mesh.F(0, currentFaceId);
-      mesh.setColor(a, Eigen::Vector4f(0.0, 1.0, 1.0, 1.0));
-      mesh.setColor(b, Eigen::Vector4f(0.0, 1.0, 1.0, 1.0));
-      mesh.setColor(c, Eigen::Vector4f(0.0, 1.0, 1.0, 1.0));
-    }
 
     screen->drawContents();
     screen->drawWidgets();
@@ -313,7 +302,10 @@ void Viewer::initCallbacks() {
     } else {
       mouseDown = false;
     }
-    // mouseMode = "ROTATION";
+
+    if (currentVertexId != -1) {
+      selectVertexId = currentVertexId;
+    }
 
   });
 
@@ -327,9 +319,23 @@ void Viewer::initCallbacks() {
     currentMouseY = y;
 
     double speed = 2.0;
+
     if (mouseDown) {
-      Eigen::Quaternionf diffRotation = control.motion(width, height, mouseX, mouseY, mouseDownX, mouseDownY, speed);
-      arcballQuat = diffRotation * mouseDownRotation;
+      if (deformation) {
+        if (selectVertexId == -1) {
+          return;
+        }
+        float zval = control.project(mesh.weightedCenter.cast<float>(), modelMatrix, viewMatrix, projMatrix, viewport).z();
+        Eigen::Vector3f mouse = { currentMouseX, height - currentMouseY, zval };
+        Eigen::Vector3f position = control.unproject(mouse, modelMatrix, viewMatrix, projMatrix, viewport);
+
+        arap.setConstraint(selectVertexId, position);
+        arap.deform(mesh.V);
+      } else {
+        Eigen::Quaternionf diffRotation = control.motion(width, height, mouseX, mouseY, mouseDownX, mouseDownY, speed);
+        arcballQuat = diffRotation * mouseDownRotation;
+      }
+
     }
 
     Eigen::Vector3f p0 = { currentMouseX, height - currentMouseY, 0.0f };
@@ -341,17 +347,32 @@ void Viewer::initCallbacks() {
     float minTime = std::numeric_limits<float>::infinity();
     Eigen::Vector2f uv;
 
-    for (int i = 0; i < mesh.F.cols(); ++i) {
-      float time;
-      bool hit = ray.intersectFace(i, time, uv);
-      if (hit && time < minTime) {
-        currentFaceId = i;
-        minTime = time;
-      }
-      if (i == mesh.F.cols()) {
-        currentFaceId = -1;
+    if (selectVertexId == -1) {
+      for (int i = 0; i < mesh.F.cols(); ++i) {
+        float time;
+        bool hit = ray.intersectFace(i, time, uv);
+        if (hit && time < minTime) {
+          currentFaceId = i;
+          minTime = time;
+          std::cout << uv << std::endl;
+        }
+        if (i == mesh.F.cols()) {
+          currentFaceId = -1;
+        }
+        mesh.setColor(mesh.F(0, i), unselectColor);
+        mesh.setColor(mesh.F(1, i), unselectColor);
+        mesh.setColor(mesh.F(2, i), unselectColor);
       }
     }
+
+    if (currentFaceId != -1 && selectVertexId == -1) {
+      currentVertexId = mesh.F(0, currentFaceId);
+      mesh.setColor(currentVertexId, selectColor);
+      // mesh.setColor(mesh.F(1, currentFaceId), selectColor);
+      // mesh.setColor(mesh.F(2, currentFaceId), selectColor);
+    }
+
+
   });
 
   glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {

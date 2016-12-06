@@ -205,12 +205,11 @@ void Mesh::computeBoundingVolumeHierarchy() {
   memset(nodes.data(), 0, sizeof(BVHNode) * nodes.size());
   nodes[0].aabb = boundingBox;
 
-  int nodeId = 0;
   int *indices = new int[F.cols()];
   for (int i = 0; i < F.cols(); ++i) {
     indices[i] = i;
   }
-  constructNodes(nodeId, indices, indices, indices + F.cols());
+  // constructNodes(0, indices, indices, indices + F.cols());
   std::cout << "done." << std::endl;
 }
 
