@@ -47,10 +47,12 @@ add_executable(cad-app
   src/main.cpp
   src/viewer.h src/viewer.cpp
   src/mesh.h src/mesh.cpp
+  src/ray.h src/ray.cpp
   src/shader.h src/shader.cpp
   src/control.h src/control.cpp
   src/loader.h src/loader.cpp
   src/arap.h src/arap.cpp
+  src/aabb.h src/aabb.cpp
 )
 
 add_definitions(${NANOGUI_EXTRA_DEFS})

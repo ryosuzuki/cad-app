@@ -86,14 +86,15 @@ void ARAP::initLinearSystem() {
 
   L.setFromTriplets(l_ij.begin(), l_ij.end());
   // std::cout << L.size() << std::endl;
-
-  // for (int i=0; i<L.outerSize(); ++i) {
-  //   for(Eigen::SparseMatrix<float>::InnerIterator it(L, i); it; ++it) {
-  //     std::cout << "(" << it.row() << ","; // row index (j)
-  //     std::cout << it.col() << ")\t"; // col index (i)
-  //     std::cout << it.value() << std::endl;
-  //   }
-  // }
+  /*
+  for (int i=0; i<L.outerSize(); ++i) {
+    for(Eigen::SparseMatrix<float>::InnerIterator it(L, i); it; ++it) {
+      std::cout << "(" << it.row() << ","; // row index (j)
+      std::cout << it.col() << ")\t"; // col index (i)
+      std::cout << it.value() << std::endl;
+    }
+  }
+  */
   solver.compute(L);
 }
 
@@ -122,6 +123,7 @@ void ARAP::estimateRotations() {
     Eigen::MatrixXf SU = svd.matrixU().transpose();
     Eigen::MatrixXf I = Eigen::MatrixXf::Identity(3, 3);
     I(2, 2) = (SV * SU).determinant();
+
     // Rotation matrix for vertex k
     R[k] = (SV * I * SU);
   }
@@ -159,14 +161,5 @@ void ARAP::estimatePositions() {
       }
     }
   }
-
-  // std::cout << freeIdxMap[641] << std::endl;
-  // 37, 640, 641
-  for (int j=0; j<V.cols(); ++j) {
-    if (V.col(j) == Vprime.col(j)) {
-      // std::cout << j << std::endl;
-    }
-  }
-
   // std::cout << Vprime << std::endl;
 }

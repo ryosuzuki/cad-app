@@ -10,6 +10,9 @@ void Mesh::set(const Eigen::MatrixXf &V_, const Eigen::MatrixXi &F_) {
   computeNormals();
   computeAdjacencyMatrix();
   computeWeightMatrix();
+
+  computeBoundingBox();
+  computeBoundingVolumeHierarchy();
 }
 
 void Mesh::setColor(int id, const Eigen::Vector4f &color) {
@@ -69,7 +72,7 @@ void Mesh::computeWeightMatrix() {
   std::vector<T> w_ij;
   w_ij.reserve(F.cols() * 3);
 
-  for (int i=0; i<F.cols(); i++) {
+  for (int i = 0; i < F.cols(); i++) {
     int a = F(0, i);
     int b = F(1, i);
     int c = F(2, i);
@@ -96,22 +99,22 @@ void Mesh::computeWeightMatrix() {
     float denom = 1.0 / (4.0 * area);
 
     // Cotangent weight
-    float cot_a = (lb*lb + lc*lc - la*la) * denom;
-    float cot_b = (lc*lc + la*la - lb*lb) * denom;
-    float cot_c = (la*la + lb*lb - lc*lc) * denom;
+    float cot_a = (lb * lb + lc * lc - la * la) * denom;
+    float cot_b = (lc * lc + la * la - lb * lb) * denom;
+    float cot_c = (la * la + lb * lb - lc * lc) * denom;
 
     cot_a = std::max<float>(float(1e-10), cot_a);
     cot_b = std::max<float>(float(1e-10), cot_b);
     cot_c = std::max<float>(float(1e-10), cot_c);
 
-    w_ij.push_back(T(a, b, 0.5*cot_c));
-    w_ij.push_back(T(b, a, 0.5*cot_c));
+    w_ij.push_back(T(a, b, 0.5 * cot_c));
+    w_ij.push_back(T(b, a, 0.5 * cot_c));
 
-    w_ij.push_back(T(b, c, 0.5*cot_a));
-    w_ij.push_back(T(c, b, 0.5*cot_a));
+    w_ij.push_back(T(b, c, 0.5 * cot_a));
+    w_ij.push_back(T(c, b, 0.5 * cot_a));
 
-    w_ij.push_back(T(c, a, 0.5*cot_b));
-    w_ij.push_back(T(a, c, 0.5*cot_b));
+    w_ij.push_back(T(c, a, 0.5 * cot_b));
+    w_ij.push_back(T(a, c, 0.5 * cot_b));
   }
 
   W.resize(V.cols(), V.cols());
@@ -166,6 +169,119 @@ void Mesh::computeAdjacencyMatrix() {
   std::cout << "done." << std::endl;
 }
 
+void Mesh::computeBoundingBox() {
+  aabb.clear();
+
+  for (int f = 0; f < F.cols(); ++f) {
+    Eigen::Vector3f v[3] = { V.col(F(0, f)), V.col(F(1, f)), V.col(F(2, f)) };
+    Eigen::Vector3f faceCenter = Eigen::Vector3f::Zero();
+    float averageEdgeLength = 0.0;
+    float maximumEdgeLength = 0.0;
+    for (int i = 0; i < 3; ++i) {
+      float edgeLength = (v[i] - v[i == 2 ? 0 : (i + 1)]).norm();
+      averageEdgeLength += edgeLength;
+      maximumEdgeLength = std::max(maximumEdgeLength, (float) edgeLength);
+      aabb.expandBy(v[i]);
+      faceCenter += v[i];
+    }
+    faceCenter *= 1.0f / 3.0f;
+    float faceArea = 0.5f * (v[1] - v[0]).cross(v[2] - v[0]).norm();
+    surfaceArea += faceArea;
+    weightedCenter += faceArea * faceCenter;
+  }
+}
+
+void Mesh::computeBoundingVolumeHierarchy() {
+  nodes.resize(2 * F.cols());
+  memset(nodes.data(), 0, sizeof(BVHNode) * nodes.size());
+  nodes[0].aabb = aabb;
+
+  int nodeId = 0;
+  int *indices = new int[F.cols()];
+  for (int i = 0; i < F.cols(); ++i) {
+    indices[i] = i;
+  }
+  constructNodes(nodeId, indices, indices, indices + F.cols());
+}
+
+void Mesh::constructNodes(int nodeId, int *indices, int *startId, int *endId) {
+  BVHNode &node = nodes[nodeId];
+  int size = endId - startId;
+  float bestCost = 1.0 * size;
+  int bestIndex = -1;
+  int bestAxis = -1;
+  std::vector<float> leftAreas(size + 1);
+
+  for (int axis = 0; axis < 3; ++axis) {
+    std::sort(startId, endId, [&](int f1, int f2) {
+      return
+        (V(axis, F(0, f1)) + V(axis, F(1, f1)) + V(axis, F(2, f1))) <
+        (V(axis, F(0, f2)) + V(axis, F(1, f2)) + V(axis, F(2, f2)));
+    });
+
+    AABB aabb;
+    for (int i = 0; i < size; ++i) {
+      int f = *(startId + i);
+      aabb.expandBy(V.col(F(0, f)));
+      aabb.expandBy(V.col(F(1, f)));
+      aabb.expandBy(V.col(F(2, f)));
+      leftAreas[i] = (float) aabb.surfaceArea();
+    }
+    if (axis == 0) {
+      node.aabb = aabb;
+    }
+    aabb.clear();
+
+    float aabbFactor = 1.0;
+    float triFactor = 1.0 / node.aabb.surfaceArea();
+    for (int i = size - 1; i >= 1; --i) {
+      int f = *(startId + i);
+      aabb.expandBy(V.col(F(0, f)));
+      aabb.expandBy(V.col(F(1, f)));
+      aabb.expandBy(V.col(F(2, f)));
+
+      float leftArea = leftAreas[i - 1];
+      float rightArea = aabb.surfaceArea();
+      int primsLeft = i;
+      int primsRight = size - i;
+
+      /* Compute SAH cost function */
+      float sah_cost = 2.0f * aabbFactor
+                       + triFactor * primsLeft * leftArea
+                       + triFactor * primsRight * rightArea;
+      if (sah_cost < bestCost) {
+        bestCost = sah_cost;
+        bestIndex = i;
+        bestAxis = axis;
+      }
+    }
+  }
+
+  if (bestIndex == -1) {
+    /* Splitting does not reduce the cost => make a leaf node */
+    node.leaf.flag = true;
+    node.leaf.size = size;
+    node.leaf.startId = startId - indices;
+    node.leaf.endId = size - node.leaf.startId;
+    return;
+  }
+
+  /* Splitting based on the best axis */
+  std::sort(startId, endId, [&](int f1, int f2) {
+    return
+      (V(bestAxis, F(0, f1)) + V(bestAxis, F(1, f1)) + V(bestAxis, F(2, f1))) <
+      (V(bestAxis, F(0, f2)) + V(bestAxis, F(1, f2)) + V(bestAxis, F(2, f2)));
+  });
+
+  int leftCount = bestIndex;
+  int leftNodeId = nodeId + 1;
+  int rightNodeId = nodeId + 2 * leftCount;
+  node.inner.rightChild = rightNodeId;
+  node.inner.unused = false;
+
+  constructNodes(leftNodeId, indices, startId, startId + leftCount);
+  constructNodes(rightNodeId, indices, startId + leftCount, endId);
+};
 
 
 

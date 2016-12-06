@@ -269,11 +269,9 @@ void Viewer::computeCameraMatries() {
 void Viewer::initCallbacks() {
   glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
     screen->keyCallbackEvent(key, scancode, action, mods);
-
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
       glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
-
   });
 
   glfwSetCharCallback(window, [](GLFWwindow *, unsigned int codepoint) {
@@ -282,6 +280,7 @@ void Viewer::initCallbacks() {
 
   glfwSetDropCallback(window, [](GLFWwindow *, int count, const char **filenames) {
     screen->dropCallbackEvent(count, filenames);
+    // load(filenames[0]);
   });
 
   glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
