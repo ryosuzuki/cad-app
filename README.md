@@ -1,6 +1,5 @@
 # CSCI-5229 Project: CAD App
-Simple 3D CAD Design Tool
-https://github.com/ryosuzuki/cad-app
+Simple 3D CAD Design Tool: https://github.com/ryosuzuki/cad-app
 
 Ryo Suzuki
 ryo.suzuki@colorado.edu
@@ -38,27 +37,27 @@ Stop the application with `ESC` key or `Ctrl-C` in the terminal.
 
 # How to play
 
-## Basic functionality
-### 1: Load the OBJ file 
+## 1. Basic functionality
+### 1-1: Load the OBJ file 
 Clicking the `Load` button, the file manager shows up. You can choose your own OBJ file from your local computer. 
 There are some sample OBJ files that I tested (`sphere.obj`, `bunny.obj`, and `armadillo.obj`). 
 As a default, the screen shows `data/sphere.obj`.
 
-### 2: Control the camera
+### 1-2: Control the camera
 By dragging the mouse, you can control the camera. By scrolling, you can zoom in and out.
 You can also change the camera position with arrow keys (up, down, left, right).
 
-### 3: Toggle wireframe
+### 1-3: Toggle wireframe
 After loading the OBJ file, you can change the wireframe by clicking the `wireframe` check button.
 
-## Mesh deformation 
-### 1: Set the constraints
+## 2. Mesh deformation 
+### 2-1: Set the constraints
 First you click the `Add Constraints` toggle switch. 
 While `Add Constraints` button is on, you can select the face by clicking the mesh. 
 The program highlights the constraint vertices as green color. 
 You can still control the camera by dragging the background. 
 
-### 2: Deformation 
+### 2-2: Deformation by dragging the mouse
 After adding constraints, now you can deform the mesh. 
 Click the `Deform` button, then click the mouse on the mesh surface and drag the mouse. 
 Now, you can see the mesh is deforming.
