@@ -9,7 +9,7 @@ See `demo-sphere.gif` and `demo-armadillo.gif` for the quick demo.
 
 ![](demo-sphere.gif)
 
-# Compiling
+# How to compile
 
 For Linux (Ubuntu) users, you should first install dependencies. (Tested with Ubuntu 16.04 LTS)
 
