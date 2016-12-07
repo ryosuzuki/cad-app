@@ -14,7 +14,8 @@ struct BVHNode;
 class Mesh {
 public:
   void init(const std::string &filename);
-  void setColor(int id, const Eigen::Vector4f &color);
+  void setVertexColor(int vid, const Eigen::Vector4f &color);
+  void setFaceColor(int fid, const Eigen::Vector4f &color);
   void computeNormals();
   void computeWeightMatrix();
   void computeAdjacencyMatrix();

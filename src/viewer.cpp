@@ -14,8 +14,9 @@ float width = 800;
 float height = 800;
 
 bool mouseDown = false;
-bool wireframe = false;
-bool deformation = false;
+bool wireframeMode = false;
+bool deformMode = false;
+bool constraintMode = false;
 float lineWidth = 0.5f;
 // std::string mouseMode = "ROTATION";
 
@@ -33,16 +34,25 @@ Eigen::Matrix4f vertexColor;
 
 float currentMouseX;
 float currentMouseY;
+float currentMouseZ;
 float mouseDownX;
 float mouseDownY;
 float mouseDownZ;
 Eigen::Quaternionf mouseDownRotation;
+Eigen::Vector3f mouseDown3D;
+Eigen::Vector3f currentMouse3D;
+
 
 int currentVertexId = -1;
 int selectVertexId = -1;
 int currentFaceId = -1;
+int mouseDownFaceId = -1;
+
+int deformId = -1;
 
 void Viewer::init() {
+  using namespace nanogui;
+  using namespace std;
 
   glfwInit();
   glfwSetTime(0);
@@ -74,77 +84,58 @@ void Viewer::init() {
   screen = new nanogui::Screen();
   screen->initialize(window, true);
 
-  nanogui::FormHelper *gui = new nanogui::FormHelper(screen);
-  nanogui::ref<nanogui::Window> guiWindow = gui->addWindow(Eigen::Vector2i(10, 10), "Main Menu");
-  gui->addGroup("Workspace");
-  gui->addButton("Load", [&]() { load(); });
-  gui->addVariable("Wireframe", wireframe);
-  gui->addVariable("Deformation", deformation);
+  Window *widget = new Window(screen, "Main Menu");
+  widget->setPosition(Vector2i(15, 15));
+  widget->setLayout(new GroupLayout());
+
+  new Label(widget, "Load OBJ file");
+  Button *button;
+  button = new Button(widget, "Load");
+  button->setCallback([&] {
+    std::string filename = nanogui::file_dialog({
+      {"obj", "Wavefront OBJ"}
+    }, false);
+    mesh.init(filename);
+    ray.init(mesh, viewport);
+    deform.init(mesh);
+  });
+
+  new Label(widget, "Toggle wireframe");
+  CheckBox *checkBox;
+  checkBox = new CheckBox(widget, "Wireframe");
+  checkBox->setCallback([&] (bool state) {
+    wireframeMode = state;
+  });
+
+  new Label(widget, "Deformation");
+  button = new Button(widget, "Add Constraints");
+  button->setFlags(Button::ToggleButton);
+  button->setChangeCallback([](bool state) {
+    constraintMode = state;
+  });
+
+  button = new Button(widget, "Deform");
+  button->setFlags(Button::ToggleButton);
+  button->setChangeCallback([](bool state) {
+    deformMode = state;
+  });
+
 
   screen->setVisible(true);
   screen->performLayout();
-
-}
-
-
-void Viewer::load(std::string filename) {
-  if (filename.empty()) {
-    filename = nanogui::file_dialog({
-      {"obj", "Wavefront OBJ"}
-    }, false);
-  }
-
-  mesh.init(filename);
-  ray.init(mesh);
-  deform.init(mesh);
-}
-
-void Viewer::drawMesh() {
-  shader.bind();
-  shader.uploadIndices(mesh.F);
-  shader.uploadAttrib("position", mesh.V);
-  shader.uploadAttrib("normal", mesh.N);
-  shader.uploadAttrib("color", mesh.C);
-  shader.setUniform("model", control.model);
-  shader.setUniform("view", control.view);
-  shader.setUniform("proj", control.proj);
-  shader.setUniform("camera_local", control.cameraLocal);
-  shader.setUniform("light_position", lightPosition);
-  shader.setUniform("show_uvs", 0.0f);
-  shader.setUniform("base_color", baseColor);
-  shader.setUniform("specular_color", specularColor);
-
-  glDepthFunc(GL_LEQUAL);
-  glEnable(GL_DEPTH_TEST);
-  if (wireframe) {
-    Eigen::Vector4f lineColor = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glEnable(GL_LINE_SMOOTH);
-    glLineWidth(lineWidth);
-    shader.setUniform("fixed_color", lineColor);
-  } else {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1.0, 1.0);
-  }
-  shader.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
-  shader.setUniform("fixed_color", Eigen::Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
-  glDisable(GL_POLYGON_OFFSET_FILL);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Viewer::launch() {
-  std::string filename = "../bunny.obj";
+  std::string filename = "../sphere.obj";
 
   init();
   initCallbacks();
 
-  control.init(viewport);
   shader.init("shader_mesh");
   mesh.init(filename);
-  ray.init(mesh);
   deform.init(mesh);
-  deform.setConstraint(37, mesh.V.col(37));
+  ray.init(mesh, viewport);
+  control.init(viewport);
 
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();
@@ -154,11 +145,6 @@ void Viewer::launch() {
     int frameWidth, frameHeight;
     glfwGetFramebufferSize(window, &frameWidth, &frameHeight);
     glViewport(0, 0, frameWidth, frameHeight);
-
-    if (selectVertexId != -1) {
-      mesh.setColor(selectVertexId, selectColor);
-    }
-    mesh.setColor(37, Eigen::Vector4f(1.0, 0.0, 0.0, 1.0));
 
     control.computeCameraMatries();
     drawMesh();
@@ -181,40 +167,41 @@ void Viewer::initCallbacks() {
     }
   });
 
-  glfwSetCharCallback(window, [](GLFWwindow *, unsigned int codepoint) {
-    screen->charCallbackEvent(codepoint);
-  });
-
-  glfwSetDropCallback(window, [](GLFWwindow *, int count, const char **filenames) {
-    screen->dropCallbackEvent(count, filenames);
-    // load(filenames[0]);
-  });
-
   glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
     screen->mouseButtonCallbackEvent(button, action, modifiers);
 
-    if (action == GLFW_PRESS) {
-      mouseDown = true;
-      Eigen::Vector3f coord = control.project(center);
-
-      mouseDownX = currentMouseX;
-      mouseDownY = currentMouseY;
-      mouseDownZ = coord[2];
-      mouseDownRotation = control.getRotation();
-
-      if (selectVertexId != -1) {
-        float zval = control.project(mesh.weightedCenter).z();
-        Eigen::Vector3f mouse = { currentMouseX, height - currentMouseY, zval };
-        Eigen::Vector3f position = control.unproject(mouse);
-        Eigen::Vector3f vertex = mesh.V.col(selectVertexId);
-
-        float distance = (vertex - position).norm() / (mesh.boundingBox.max - mesh.boundingBox.min).norm();
-        std::cout << distance << std::endl;
-      }
-
-    } else {
+    if (action != GLFW_PRESS) {
       mouseDown = false;
+      mouseDownFaceId = -1;
+      deformId = -1;
+      return;
     }
+
+    mouseDown = true;
+    mouseDownX = currentMouseX;
+    mouseDownY = currentMouseY;
+    mouseDownZ = control.project(mesh.weightedCenter)[2];
+    mouseDownRotation = control.getRotation();
+    mouseDown3D = control.unproject(Eigen::Vector3f(mouseDownX, height-mouseDownY, mouseDownZ));
+
+    ray.setFromMouse(mouseDownX, mouseDownY, control);
+    mouseDownFaceId = ray.intersect();
+    std::cout << mouseDownFaceId << std::endl;
+
+    if (constraintMode && mouseDownFaceId != -1) {
+      for (int i = 0; i < 3; ++i) {
+        int id = mesh.F(i, currentFaceId);
+        deform.setConstraint(id, mesh.V.col(id));
+        mesh.setVertexColor(id, selectColor);
+      }
+    }
+
+    if (deformMode && mouseDownFaceId != -1) {
+      deformId = mesh.F(0, currentFaceId);
+    } else {
+      deformId = -1;
+    }
+
 
     if (currentVertexId != -1) {
       selectVertexId = currentVertexId;
@@ -225,65 +212,23 @@ void Viewer::initCallbacks() {
   glfwSetCursorPosCallback(window, [](GLFWwindow *, double x, double y) {
     screen->cursorPosCallbackEvent(x, y);
 
-    float mouseX = x;
-    float mouseY = y;
-
+    ray.setFromMouse(x, y, control);
+    currentFaceId = ray.intersect();
     currentMouseX = x;
     currentMouseY = y;
-
-    double speed = 2.0;
+    currentMouseZ = control.project(mesh.weightedCenter)[2];
+    currentMouse3D = control.unproject(Eigen::Vector3f(currentMouseX, height-currentMouseY, currentMouseZ));
 
     if (mouseDown) {
-      if (deformation) {
-        if (selectVertexId == -1) {
-          return;
-        }
-        float zval = control.project(mesh.weightedCenter).z();
-        Eigen::Vector3f mouse = { currentMouseX, height - currentMouseY, zval };
-        Eigen::Vector3f position = control.unproject(mouse);
-
-        deform.setConstraint(selectVertexId, position);
+      if (deformMode && deformId != -1 && mouseDownFaceId != -1) {
+        std::cout << currentMouse3D << std::endl;
+        deform.setConstraint(deformId, currentMouse3D);
+        mesh.setVertexColor(deformId, selectColor);
         deform.solve(mesh.V);
       } else {
-        control.updateRotation(mouseX, mouseY, mouseDownX, mouseDownY, speed, mouseDownRotation);
-      }
-
-    }
-
-    Eigen::Vector3f p0 = { currentMouseX, height - currentMouseY, 0.0f };
-    Eigen::Vector3f p1 = { currentMouseX, height - currentMouseY, 1.0f };
-    Eigen::Vector3f pos0 = control.unproject(p0);
-    Eigen::Vector3f pos1 = control.unproject(p1);
-    ray.set(pos0, (pos1 - pos0).normalized());
-
-    float minTime = std::numeric_limits<float>::infinity();
-    Eigen::Vector2f uv;
-
-    if (selectVertexId == -1) {
-      for (int i = 0; i < mesh.F.cols(); ++i) {
-        float time;
-        bool hit = ray.intersectFace(i, time, uv);
-        if (hit && time < minTime) {
-          currentFaceId = i;
-          minTime = time;
-          // std::cout << uv << std::endl;
-        }
-        if (i == mesh.F.cols()) {
-          currentFaceId = -1;
-        }
-        mesh.setColor(mesh.F(0, i), unselectColor);
-        mesh.setColor(mesh.F(1, i), unselectColor);
-        mesh.setColor(mesh.F(2, i), unselectColor);
+        control.updateRotation(currentMouseX, currentMouseY, mouseDownX, mouseDownY, mouseDownRotation);
       }
     }
-
-    if (currentFaceId != -1 && selectVertexId == -1) {
-      currentVertexId = mesh.F(0, currentFaceId);
-      mesh.setColor(currentVertexId, selectColor);
-      // mesh.setColor(mesh.F(1, currentFaceId), selectColor);
-      // mesh.setColor(mesh.F(2, currentFaceId), selectColor);
-    }
-
 
   });
 
@@ -292,9 +237,65 @@ void Viewer::initCallbacks() {
     control.zoom(y);
   });
 
+  glfwSetCharCallback(window, [](GLFWwindow *, unsigned int codepoint) {
+    screen->charCallbackEvent(codepoint);
+  });
+
+  glfwSetDropCallback(window, [](GLFWwindow *, int count, const char **filenames) {
+    screen->dropCallbackEvent(count, filenames);
+    // load(filenames[0]);
+  });
+
   glfwSetFramebufferSizeCallback(window, [](GLFWwindow *, int width, int height) {
     screen->resizeCallbackEvent(width, height);
   });
 
 }
+
+void Viewer::load(std::string filename) {
+
+}
+
+void Viewer::drawMesh() {
+  shader.bind();
+  shader.uploadIndices(mesh.F);
+  shader.uploadAttrib("position", mesh.V);
+  shader.uploadAttrib("normal", mesh.N);
+  shader.uploadAttrib("color", mesh.C);
+  shader.setUniform("model", control.model);
+  shader.setUniform("view", control.view);
+  shader.setUniform("proj", control.proj);
+  shader.setUniform("camera_local", control.cameraLocal);
+  shader.setUniform("light_position", lightPosition);
+  shader.setUniform("show_uvs", 0.0f);
+  shader.setUniform("base_color", baseColor);
+  shader.setUniform("specular_color", specularColor);
+
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_TEST);
+  if (wireframeMode) {
+    Eigen::Vector4f lineColor = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glEnable(GL_LINE_SMOOTH);
+    glLineWidth(lineWidth);
+    shader.setUniform("fixed_color", lineColor);
+  } else {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(1.0, 1.0);
+  }
+  shader.drawIndexed(GL_TRIANGLES, 0, mesh.F.cols());
+  shader.setUniform("fixed_color", Eigen::Vector4f(0.0f, 0.0f, 0.0f, 0.0f));
+  glDisable(GL_POLYGON_OFFSET_FILL);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+
+
+    // if (selectVertexId != -1) {
+    //   Eigen::Vector3f position = control.unproject(mouse);
+    //   Eigen::Vector3f vertex = mesh.V.col(selectVertexId);
+    //   float distance = (vertex - position).norm() / (mesh.boundingBox.max - mesh.boundingBox.min).norm();
+    //   std::cout << distance << std::endl;
+    // }
 

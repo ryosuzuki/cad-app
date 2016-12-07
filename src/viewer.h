@@ -23,11 +23,6 @@ public:
   void load(std::string filename = "");
 
   void drawMesh();
-  void drawWireframe();
-
-  void save();
-  void debug();
-  void computeCameraMatries();
 
 };
 

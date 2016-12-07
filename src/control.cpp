@@ -11,6 +11,7 @@ void Control::init(const Eigen::Vector4f &viewport) {
   cameraFar = 100.0;
   cameraZoom = 3.0f;
   modelZoom = 3.0f;
+  speed = 2.0f;
 
   model = Eigen::Matrix4f::Identity();
   view = Eigen::Matrix4f::Identity();
@@ -69,7 +70,7 @@ void Control::zoom(float delta) {
   }
 }
 
-void Control::updateRotation(float mouseX, float mouseY, float mouseDownX, float mouseDownY, float speed, const Eigen::Quaternionf &mouseDownRotation) {
+void Control::updateRotation(float mouseX, float mouseY, float mouseDownX, float mouseDownY, const Eigen::Quaternionf &mouseDownRotation) {
   Eigen::Quaternionf diffRotation = Eigen::Quaternionf::Identity();
   float invMinDim = 1.0f / (width < height ? width : height);
   float ox = (speed * (2*mouseDownX - width) + width) - width - 1.0f;

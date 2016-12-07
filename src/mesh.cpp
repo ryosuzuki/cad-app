@@ -16,8 +16,15 @@ void Mesh::init(const std::string &filename) {
   computeBoundingVolumeHierarchy();
 }
 
-void Mesh::setColor(int id, const Eigen::Vector4f &color) {
-  C.col(id) = color;
+void Mesh::setVertexColor(int vid, const Eigen::Vector4f &color) {
+  C.col(vid) = color;
+}
+
+void Mesh::setFaceColor(int fid, const Eigen::Vector4f &color) {
+  for (int i = 0; i< 3; ++i) {
+    int vid = F(i, fid);
+    C.col(vid) = color;
+  }
 }
 
 void Mesh::computeNormals() {

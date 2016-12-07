@@ -1,12 +1,22 @@
 
 #include "ray.h"
 
-void Ray::init(const Mesh &mesh) {
+void Ray::init(const Mesh &mesh, const Eigen::Vector4f &viewport) {
   V = mesh.V;
   F = mesh.F;
   N = mesh.N;
   nodes = mesh.nodes;
+
+  width = viewport(2);
+  height = viewport(3);
 }
+
+/*
+void Ray::updateViewport(Eigen::Vector4f viewport) {
+  width = viewport(2);
+  height = viewport(3);
+}
+*/
 
 void Ray::set(const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_) {
   origin = origin_;
@@ -14,6 +24,29 @@ void Ray::set(const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_)
 
   minTime = 0.0f;
   maxTime = std::numeric_limits<float>::infinity();
+}
+
+void Ray::setFromMouse(float x, float y, Control control) {
+  Eigen::Vector3f p0 = { x, height-y, 0.0f };
+  Eigen::Vector3f p1 = { x, height-y, 1.0f };
+  Eigen::Vector3f pos0 = control.unproject(p0);
+  Eigen::Vector3f pos1 = control.unproject(p1);
+  set(pos0, (pos1 - pos0).normalized());
+}
+
+int Ray::intersect() {
+  int currentFaceId = -1;
+  float minTime = std::numeric_limits<float>::infinity();
+  Eigen::Vector2f uv;
+  for (int i = 0; i < F.cols(); ++i) {
+    float time;
+    bool hit = intersectFace(i, time, uv);
+    if (hit && time < minTime) {
+      currentFaceId = i;
+      minTime = time;
+    }
+  }
+  return currentFaceId;
 }
 
 bool Ray::intersect(int &faceId, float &t, Eigen::Vector2f *uv) {

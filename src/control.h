@@ -13,7 +13,6 @@ public:
   void zoom(float delta);
   void updateRotation(float mouseX, float mouseY,
                       float mouseDownX, float mouseDownY,
-                      float speed,
                       const Eigen::Quaternionf &mouseDownRotation);
   Eigen::Vector3f project(const Eigen::Vector3f &obj);
   Eigen::Vector3f unproject(const Eigen::Vector3f &win);
@@ -40,6 +39,7 @@ public:
   float cameraFar;
   float cameraZoom;
   float modelZoom;
+  float speed;
 
   Eigen::Matrix4f model;
   Eigen::Matrix4f view;
