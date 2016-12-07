@@ -6,16 +6,16 @@ Ryo Suzuki
 ryo.suzuki@colorado.edu
 
 # Demo 
-See [demo-sphere.gif](https://github.com/ryosuzuki/cad-app/blob/master/demo-sphere.gif) and [demo-armadillo.gif](https://github.com/ryosuzuki/cad-app/blob/master/demo-sphere.gif) in the root directory for the quick demo.
+See `demo-sphere.gif` and `demo-armadillo.gif` for the quick demo.
 
 ![](demo-sphere.gif)
 
 # Compiling
 
-For Linux (Ubuntu), you should first install dependencies. (Tested with Ubuntu 16.04 LTS)
+For Linux (Ubuntu) users, you should first install dependencies. (Tested with Ubuntu 16.04 LTS)
 
 ```
-$ apt-get install cmake xorg-dev libglu1-mesa-dev
+$ sudo apt-get install cmake xorg-dev libglu1-mesa-dev
 ```
 
 Then, build with `CMake`
@@ -77,10 +77,10 @@ The main goal of the algorithm is to solve the `Lp' = b` of the equation 9, wher
 First, when the OBJ file is loaded, `src/mesh.cpp` calculates Laplacian matrix with the symmetric cotangent weights.
 Then, the program constructs `b` by letting the user to add constraint vertices. 
 The basic approach is to minimize the local rigidity energy described in the equation 7, so we iteratively compute the gradient of the energy function `E(S')` in `src/deform.cpp`. 
-For the fast calculation to solve the linear equation `Lp' = b`, I used the Cholesky factorization by leveraging the sparse LU decomposition provided by the Eigen matrix library.
+For the fast calculation to solve the linear equation `Lp' = b`, I used the Cholesky factorization by leveraging the sparse LU decomposition provided by the [Eigen](https://eigen.tuxfamily.org/) matrix library.
 
 ## Other functionalities 
-`src/viewer.cpp` provides the basic 3D viewer and event callback. 
+`src/viewer.cpp` provides the basic 3D viewer and event callback. I used [GLFW](https://github.com/glfw/glfw) for the OpenGL utility library and [nanogui](https://github.com/wjakob/nanogui) for the basic UI components such as buttons and check boxes (GLFW is already included in the nanogui library).  
 `src/control.cpp` enables to rotate and zoom based on model, view, and projection matrix. 
 `src/shader.cpp` and `shader_mesh.vert/geom/frag` are the shader files. 
 `src/ray.cpp` is for the ray tracing, which enables to select the vertex and face by converting from the 2D mouse position to the 3D world. For the fast ray tracing, I used the Bounding Volume Hierarchy (BVH) algorithm introduced in this paper.
