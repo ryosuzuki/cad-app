@@ -32,7 +32,7 @@ void main() {
   vec3 refl = reflect(-to_light, normal);
 
   float diffuse_factor = max(0.0, dot(to_light, normal));
-  float specular_factor = pow(max(dot(to_eye, refl), 0.0), 10.0);
+  float specular_factor = pow(max(dot(to_eye, refl), 0.0), 100.0);
 
   vec3 finalColor = (Ka + Kd*diffuse_factor + Ks*specular_factor) * (1-frag.color.a) + (frag.color.rgb * frag.color.a);
 

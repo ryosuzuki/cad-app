@@ -18,7 +18,6 @@ bool wireframeMode = false;
 bool deformMode = false;
 bool constraintMode = false;
 float lineWidth = 0.5f;
-// std::string mouseMode = "ROTATION";
 
 Eigen::Vector3f center(0, 1, 0);
 Eigen::Vector4f lineColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -149,7 +148,7 @@ void Viewer::load(std::string filename) {
 }
 
 void Viewer::launch() {
-  filename = "../data/armadillo.obj";
+  filename = "../data/sphere.obj";
 
   init();
   initCallbacks();
@@ -174,9 +173,6 @@ void Viewer::launch() {
 
     glfwSwapBuffers(window);
     glfwWaitEvents();
-    std::cout << ".";
-    std::cout.flush();
-
   }
 
   glfwTerminate();
@@ -241,6 +237,8 @@ void Viewer::initCallbacks() {
         deform.setConstraint(deformId, currentMouse3D);
         mesh.setVertexColor(deformId, selectColor);
         deform.solve(mesh.V);
+        mesh.computeNormals();
+
         glfwPostEmptyEvent();
       } else {
         control.updateRotation(currentMouseX, currentMouseY, mouseDownX, mouseDownY, mouseDownRotation);
