@@ -38,6 +38,7 @@ public:
   AABB boundingBox;
   float surfaceArea;
   Eigen::Vector3f weightedCenter;
+  Eigen::Vector3f center;
 };
 
 /* Node for Bounding Volume Hierarcy */

@@ -11,12 +11,17 @@ void Ray::init(const Mesh &mesh, const Eigen::Vector4f &viewport) {
   height = viewport(3);
 }
 
-/*
+void Ray::updateMesh(const Mesh &mesh) {
+  V = mesh.V;
+  F = mesh.F;
+  N = mesh.N;
+  nodes = mesh.nodes;
+}
+
 void Ray::updateViewport(Eigen::Vector4f viewport) {
   width = viewport(2);
   height = viewport(3);
 }
-*/
 
 void Ray::set(const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_) {
   origin = origin_;

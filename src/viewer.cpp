@@ -28,7 +28,7 @@ Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
 Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
 Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 Eigen::Vector4f selectColor(1.0f, 0.0f, 1.0f, 1.0f);
-Eigen::Vector4f unselectColor(0.0f, 0.0f, 0.0f, 0.0f);
+Eigen::Vector4f constraintColor(0.0f, 1.0f, 0.0f, 1.0f);
 
 Eigen::Matrix4f vertexColor;
 
@@ -95,9 +95,7 @@ void Viewer::init() {
     std::string filename = nanogui::file_dialog({
       {"obj", "Wavefront OBJ"}
     }, false);
-    mesh.init(filename);
-    ray.init(mesh, viewport);
-    deform.init(mesh);
+    load(filename);
   });
 
   new Label(widget, "Toggle wireframe");
@@ -125,16 +123,25 @@ void Viewer::init() {
   screen->performLayout();
 }
 
+void Viewer::load(std::string filename) {
+  mesh.init(filename);
+  deform.init(mesh);
+  ray.init(mesh, viewport);
+
+  control.cameraCenter = mesh.weightedCenter;
+  control.modelTranslation = -mesh.weightedCenter.cast<float>();
+  control.modelZoom = 1.0f / (mesh.boundingBox.max - mesh.boundingBox.min).cwiseAbs().maxCoeff();
+  control.computeCameraMatries();
+
+  glfwPostEmptyEvent();
+}
+
 void Viewer::launch() {
   std::string filename = "../data/bunny.obj";
 
   init();
   initCallbacks();
-
   shader.init("shader_mesh");
-  mesh.init(filename);
-  deform.init(mesh);
-  ray.init(mesh, viewport);
   control.init(viewport);
 
   while (glfwWindowShouldClose(window) == 0) {
@@ -153,6 +160,10 @@ void Viewer::launch() {
     screen->drawWidgets();
 
     glfwSwapBuffers(window);
+    glfwWaitEvents();
+    std::cout << ".";
+    std::cout.flush();
+
   }
 
   glfwTerminate();
@@ -177,6 +188,8 @@ void Viewer::initCallbacks() {
       return;
     }
 
+    // ray.setFromMouse(x, y, control);
+    // currentFaceId = ray.intersect();
     mouseDown = true;
     mouseDownX = currentMouseX;
     mouseDownY = currentMouseY;
@@ -190,14 +203,14 @@ void Viewer::initCallbacks() {
 
     if (constraintMode && mouseDownFaceId != -1) {
       for (int i = 0; i < 3; ++i) {
-        int id = mesh.F(i, currentFaceId);
+        int id = mesh.F(i, mouseDownFaceId);
         deform.setConstraint(id, mesh.V.col(id));
-        mesh.setVertexColor(id, selectColor);
+        mesh.setVertexColor(id, constraintColor);
       }
     }
 
     if (deformMode && mouseDownFaceId != -1) {
-      deformId = mesh.F(0, currentFaceId);
+      deformId = mesh.F(0, mouseDownFaceId);
     } else {
       deformId = -1;
     }
@@ -212,8 +225,6 @@ void Viewer::initCallbacks() {
   glfwSetCursorPosCallback(window, [](GLFWwindow *, double x, double y) {
     screen->cursorPosCallbackEvent(x, y);
 
-    ray.setFromMouse(x, y, control);
-    currentFaceId = ray.intersect();
     currentMouseX = x;
     currentMouseY = y;
     currentMouseZ = control.project(mesh.weightedCenter)[2];
@@ -221,10 +232,10 @@ void Viewer::initCallbacks() {
 
     if (mouseDown) {
       if (deformMode && deformId != -1 && mouseDownFaceId != -1) {
-        std::cout << currentMouse3D << std::endl;
         deform.setConstraint(deformId, currentMouse3D);
         mesh.setVertexColor(deformId, selectColor);
         deform.solve(mesh.V);
+        glfwPostEmptyEvent();
       } else {
         control.updateRotation(currentMouseX, currentMouseY, mouseDownX, mouseDownY, mouseDownRotation);
       }
@@ -267,6 +278,8 @@ void Viewer::drawMesh() {
   shader.setUniform("show_uvs", 0.0f);
   shader.setUniform("base_color", baseColor);
   shader.setUniform("specular_color", specularColor);
+
+  ray.updateMesh(mesh);
 
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);

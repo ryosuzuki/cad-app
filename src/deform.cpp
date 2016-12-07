@@ -19,7 +19,7 @@ void Deform::solve(Eigen::MatrixXf &U) {
   initializeLinearSystem();
 
   int iter = 0;
-  int iterMax = 5;
+  int iterMax = 3;
   while (iter < iterMax) {
     estimateRotations();
     estimatePositions();

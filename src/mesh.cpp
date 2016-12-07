@@ -199,9 +199,8 @@ void Mesh::computeBoundingBox() {
     surfaceArea += faceArea;
     weightedCenter += faceArea * faceCenter;
   }
+  center = (boundingBox.max + boundingBox.min) / 2.0f;
   std::cout << "done." << std::endl;
-  std::cout << boundingBox.min << std::endl;
-  std::cout << boundingBox.max << std::endl;
 }
 
 void Mesh::computeBoundingVolumeHierarchy() {

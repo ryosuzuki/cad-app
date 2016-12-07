@@ -16,8 +16,9 @@
 class Viewer {
 public:
   void init();
-  void initCallbacks();
+  void load(std::string filename);
   void launch();
+  void initCallbacks();
   void drawMesh();
 };
 

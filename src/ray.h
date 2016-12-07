@@ -12,6 +12,8 @@ public:
 
   void init(const Mesh &mesh, const Eigen::Vector4f &viewport);
   void set(const Eigen::Vector3f &origin_, const Eigen::Vector3f &direction_);
+  void updateMesh(const Mesh &mesh);
+  void updateViewport(Eigen::Vector4f viewport);
   void setFromMouse(float x, float y, Control control);
   int intersect();
   bool intersect(int &faceId, float &t, Eigen::Vector2f *uv);

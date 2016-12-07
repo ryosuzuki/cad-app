@@ -9,8 +9,8 @@ void Control::init(const Eigen::Vector4f &viewport) {
   cameraViewAngle = 45.0;
   cameraNear = 1.0;
   cameraFar = 100.0;
-  cameraZoom = 3.0f;
-  modelZoom = 3.0f;
+  cameraZoom = 2.0f;
+  modelZoom = 1.0f;
   speed = 2.0f;
 
   model = Eigen::Matrix4f::Identity();
@@ -63,6 +63,7 @@ void Control::computeCameraMatries() {
 }
 
 void Control::zoom(float delta) {
+  std::cout << cameraZoom << std::endl;
   if (delta != 0) {
     float mult = (1.0 + ((delta > 0) ? 1.0 : -1.0) * 0.05);
     const float minZoom = 0.1f;
