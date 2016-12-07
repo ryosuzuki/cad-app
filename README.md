@@ -3,7 +3,6 @@ Simple 3D CAD Design Tool
 
 Ryo Suzuki
 ryo.suzuki@colorado.edu
-rysu7393
 
 # Compiling
 
@@ -28,7 +27,7 @@ Run the application
 $ ./cad-app
 ```
 
-Stop the application with `Ctrl-C` in terminal.
+Stop the application with `ESC` key or `Ctrl-C` in terminal.
 
 
 # How to play
@@ -40,7 +39,7 @@ As default, I show `bunny.obj`.
 ## Step.2: Control the camer
 By dragging the mouse, you can control the camera. By scrolling, you can zoom in and out.
 
-# Step.3: Toggle wireframe
+## Step.3: Toggle wireframe
 By clicking the `wireframe` button, you can change the wireframe or solid body.
 
 

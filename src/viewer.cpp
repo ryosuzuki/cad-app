@@ -126,7 +126,7 @@ void Viewer::init() {
 }
 
 void Viewer::launch() {
-  std::string filename = "../sphere.obj";
+  std::string filename = "../data/bunny.obj";
 
   init();
   initCallbacks();
@@ -252,9 +252,6 @@ void Viewer::initCallbacks() {
 
 }
 
-void Viewer::load(std::string filename) {
-
-}
 
 void Viewer::drawMesh() {
   shader.bind();
@@ -289,13 +286,4 @@ void Viewer::drawMesh() {
   glDisable(GL_POLYGON_OFFSET_FILL);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-
-
-
-    // if (selectVertexId != -1) {
-    //   Eigen::Vector3f position = control.unproject(mouse);
-    //   Eigen::Vector3f vertex = mesh.V.col(selectVertexId);
-    //   float distance = (vertex - position).norm() / (mesh.boundingBox.max - mesh.boundingBox.min).norm();
-    //   std::cout << distance << std::endl;
-    // }
 
