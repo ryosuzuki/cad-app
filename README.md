@@ -42,7 +42,7 @@ Stop the application with `ESC` key or `Ctrl-C` in terminal.
 ### 1: Load the OBJ file 
 Clicking the `Load` button, the file manager shows up. You can choose your own OBJ file from your local computer. 
 There are some sample OBJ files that I tested (`sphere.obj`, `bunny.obj`, and `armadillo.obj`). 
-The default screen shows `data/sphere.obj`.
+As default, the screen shows `data/sphere.obj`.
 
 ### 2: Control the camera
 By dragging the mouse, you can control the camera. By scrolling, you can zoom in and out.
