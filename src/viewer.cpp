@@ -24,8 +24,8 @@ Eigen::Vector3f center(0, 1, 0);
 Eigen::Vector4f lineColor(1.0f, 1.0f, 1.0f, 1.0f);
 Eigen::Vector4f viewport(0, 0, 800, 800);
 
-Eigen::Vector3f lightPosition(0.0f, 0.30f, 5.0f);
-Eigen::Vector3f baseColor(0.4f, 0.4f, 0.4f);
+Eigen::Vector3f lightPosition(0.0f, 3.0f, 5.0f);
+Eigen::Vector3f baseColor(0.7f, 0.7f, 0.7f);
 Eigen::Vector3f specularColor(1.0f, 1.0f, 1.0f);
 Eigen::Vector4f selectColor(1.0f, 0.0f, 1.0f, 1.0f);
 Eigen::Vector4f constraintColor(0.0f, 1.0f, 0.0f, 1.0f);
@@ -49,6 +49,8 @@ int currentFaceId = -1;
 int mouseDownFaceId = -1;
 
 int deformId = -1;
+
+std::string filename;
 
 void Viewer::init() {
   using namespace nanogui;
@@ -89,10 +91,9 @@ void Viewer::init() {
   widget->setLayout(new GroupLayout());
 
   new Label(widget, "Load OBJ file");
-  Button *button;
-  button = new Button(widget, "Load");
-  button->setCallback([&] {
-    std::string filename = nanogui::file_dialog({
+  Button *loadButton = new Button(widget, "Load");
+  loadButton->setCallback([&] {
+    filename = nanogui::file_dialog({
       {"obj", "Wavefront OBJ"}
     }, false);
     load(filename);
@@ -106,18 +107,29 @@ void Viewer::init() {
   });
 
   new Label(widget, "Deformation");
-  button = new Button(widget, "Add Constraints");
-  button->setFlags(Button::ToggleButton);
-  button->setChangeCallback([](bool state) {
+  Button *constraintButton = new Button(widget, "Add Constraints");
+  Button *deformButton = new Button(widget, "Deform");
+
+  constraintButton->setFlags(Button::ToggleButton);
+  constraintButton->setChangeCallback([deformButton](bool state) {
     constraintMode = state;
+    deformMode = false;
+    deformButton->setPushed(false);
   });
 
-  button = new Button(widget, "Deform");
-  button->setFlags(Button::ToggleButton);
-  button->setChangeCallback([](bool state) {
+  deformButton->setFlags(Button::ToggleButton);
+  deformButton->setChangeCallback([constraintButton](bool state) {
     deformMode = state;
+    constraintMode = false;
+    constraintButton->setPushed(false);
   });
 
+  new Label(widget, "Reset");
+  Button *resetButton = new Button(widget, "Reset Settings");
+  resetButton->setCallback([&] {
+    control.init(viewport);
+    load(filename);
+  });
 
   screen->setVisible(true);
   screen->performLayout();
@@ -137,13 +149,14 @@ void Viewer::load(std::string filename) {
 }
 
 void Viewer::launch() {
-  std::string filename = "../data/bunny.obj";
+  filename = "../data/armadillo.obj";
 
   init();
   initCallbacks();
   shader.init("shader_mesh");
   control.init(viewport);
 
+  load(filename);
   while (glfwWindowShouldClose(window) == 0) {
     glfwPollEvents();
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -171,13 +184,6 @@ void Viewer::launch() {
 
 
 void Viewer::initCallbacks() {
-  glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
-    screen->keyCallbackEvent(key, scancode, action, mods);
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-      glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-  });
-
   glfwSetMouseButtonCallback(window, [](GLFWwindow *, int button, int action, int modifiers) {
     screen->mouseButtonCallbackEvent(button, action, modifiers);
 
@@ -195,7 +201,7 @@ void Viewer::initCallbacks() {
     mouseDownY = currentMouseY;
     mouseDownZ = control.project(mesh.weightedCenter)[2];
     mouseDownRotation = control.getRotation();
-    mouseDown3D = control.unproject(Eigen::Vector3f(mouseDownX, height-mouseDownY, mouseDownZ));
+    mouseDown3D = control.unproject(Eigen::Vector3f(mouseDownX, height - mouseDownY, mouseDownZ));
 
     ray.setFromMouse(mouseDownX, mouseDownY, control);
     mouseDownFaceId = ray.intersect();
@@ -228,7 +234,7 @@ void Viewer::initCallbacks() {
     currentMouseX = x;
     currentMouseY = y;
     currentMouseZ = control.project(mesh.weightedCenter)[2];
-    currentMouse3D = control.unproject(Eigen::Vector3f(currentMouseX, height-currentMouseY, currentMouseZ));
+    currentMouse3D = control.unproject(Eigen::Vector3f(currentMouseX, height - currentMouseY, currentMouseZ));
 
     if (mouseDown) {
       if (deformMode && deformId != -1 && mouseDownFaceId != -1) {
@@ -241,6 +247,29 @@ void Viewer::initCallbacks() {
       }
     }
 
+  });
+
+  glfwSetKeyCallback(window, [](GLFWwindow *, int key, int scancode, int action, int mods) {
+    screen->keyCallbackEvent(key, scancode, action, mods);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
+    } else if (key == GLFW_KEY_UP) {
+      control.cameraEye[1] += 0.02;
+      control.cameraCenter[1] += 0.02;
+      glfwPostEmptyEvent();
+    } else if (key == GLFW_KEY_DOWN) {
+      control.cameraEye[1] -= 0.02;
+      control.cameraCenter[1] -= 0.02;
+      glfwPostEmptyEvent();
+    } else if (key == GLFW_KEY_LEFT) {
+      control.cameraEye[0] += 0.02;
+      control.cameraCenter[0] += 0.02;
+      glfwPostEmptyEvent();
+    } else if (key == GLFW_KEY_RIGHT) {
+      control.cameraEye[0] -= 0.02;
+      control.cameraCenter[0] -= 0.02;
+      glfwPostEmptyEvent();
+    }
   });
 
   glfwSetScrollCallback(window, [](GLFWwindow *, double x, double y) {
