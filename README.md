@@ -40,7 +40,7 @@ Stop the application with `ESC` key or `Ctrl-C` in the terminal.
 ## 1. Basic functionality
 ### 1-1: Load the OBJ file 
 Clicking the `Load` button, the file manager shows up. You can choose your own OBJ file from your local computer. 
-There are some sample OBJ files that I tested (`sphere.obj`, `bunny.obj`, and `armadillo.obj`). 
+There are some sample OBJ files that I tested in the `data` directory  (`data/sphere.obj`, `data/bunny.obj`, and `data/armadillo.obj`). 
 As a default, the screen shows `data/sphere.obj`.
 
 ### 1-2: Control the camera
