@@ -7,7 +7,6 @@ ryo.suzuki@colorado.edu
 # Demo 
 See `demo-sphere.gif` and `demo-armadillo.gif` for the quick demo.
 ![](demo-sphere.gif)
-![](demo-armadillo.gif)
 
 # Compiling
 
