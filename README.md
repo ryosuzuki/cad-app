@@ -1,11 +1,13 @@
 # CSCI-5229 Project: CAD App
 Simple 3D CAD Design Tool
+https://github.com/ryosuzuki/cad-app
 
 Ryo Suzuki
 ryo.suzuki@colorado.edu
 
 # Demo 
-See `demo-sphere.gif` and `demo-armadillo.gif` for the quick demo.
+See [demo-sphere.gif](https://github.com/ryosuzuki/cad-app/blob/master/demo-sphere.gif) and [demo-armadillo.gif](https://github.com/ryosuzuki/cad-app/blob/master/demo-sphere.gif) in the root directory for the quick demo.
+
 ![](demo-sphere.gif)
 
 # Compiling
