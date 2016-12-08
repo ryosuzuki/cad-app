@@ -91,5 +91,5 @@ For the fast calculation to solve the linear equation `Lp' = b`, I used the Chol
 `src/ray.cpp` is for the ray tracing, which enables to select the vertex and face by converting from the 2D mouse position to the 3D world. For the fast ray tracing, I used the Bounding Volume Hierarchy (BVH) algorithm introduced in this paper.
 
 "Ray tracing deformable scenes using dynamic bounding volume hierarchies.", Ingo Wald, Solomon Boulos, and Peter Shirley.  ACM Transactions on Graphics (TOG) 26.1 (2007): 6.
-
+https://pdfs.semanticscholar.org/b992/1ef56755537cc37e90b10da50648bbdee5f1.pdf
 
