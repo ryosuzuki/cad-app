@@ -11,6 +11,11 @@ See `demo-sphere.gif` and `demo-armadillo.gif` for the quick demo.
 
 # How to compile
 
+```
+$ git clone --recursive git@github.com:ryosuzuki/cad-app.git
+$ cd cad-app
+```
+
 For Linux (Ubuntu) users, you should first install dependencies. (Tested with Ubuntu 16.04 LTS)
 
 ```
